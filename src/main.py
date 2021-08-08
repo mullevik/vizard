@@ -21,13 +21,6 @@ if __name__ == '__main__':
     # Application loop
     while True:
 
-        for event in pygame.event.get():
-
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                print("Successful termination")
-                sys.exit(0)
-
         followup_scene_name = active_scene.run()
 
         if followup_scene_name in scene_classes:

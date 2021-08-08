@@ -10,7 +10,8 @@ from pygame.time import Clock
 
 from src.constants import FRAME_RATE
 from src.environment import Environment, EnvironmentRenderer
-from src.player import Player, PlayerSprite, HorizontalMoveAction
+from src.player import Player, PlayerSprite, HorizontalMoveAction, \
+    VerticalMoveAction
 from src.settings import GameSettings
 
 
@@ -115,9 +116,15 @@ class DefaultScene(Scene):
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
                     self.player.apply_action(HorizontalMoveAction(self.environment, -1))
                     print("MOVE LEFT")
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_j:
+                    self.player.apply_action(VerticalMoveAction(self.environment, 1))
+                    print("MOVE DOWN")
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_k:
+                    self.player.apply_action(VerticalMoveAction(self.environment, -1))
+                    print("MOVE UP")
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_l:
                     self.player.apply_action(HorizontalMoveAction(self.environment, 1))
-                    print("MOVE UP")
+                    print("MOVE RIGHT")
 
             self.screen.fill("dimgray")
 

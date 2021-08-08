@@ -50,7 +50,8 @@ class PlayerSprite(pygame.sprite.Sprite):
 
         self.original_image = load_scaled_surface(IMG_VIZZARD_IDLE,
                                                   settings.scale_factor)
-        self.flipped_image = pygame.transform.flip(self.original_image, True, False)
+        self.flipped_image = pygame.transform.flip(self.original_image, True,
+                                                   False)
         self.image = self.original_image.copy()
 
         center_of_first_type = ((TILE_SIZE_PX // 2) * settings.scale_factor,
@@ -91,12 +92,48 @@ class HorizontalMoveAction(AbstractAction):
         future_x = current_x + self.steps
 
         if 0 <= future_x < self.environment.get_tile_dimensions()[0]:
-            subject.set_position(Position(future_x, subject.get_position().y))
 
-            future_direction = CardinalDirection.EAST \
-                if self.steps > 0 else CardinalDirection.WEST
-            subject.set_direction(future_direction)
+            future_position = Position(future_x, subject.get_position().y)
+
+            if self.environment.tile_at(future_position).is_walkable():
+                subject.set_position(future_position)
+
+                future_direction = CardinalDirection.EAST \
+                    if self.steps > 0 else CardinalDirection.WEST
+                subject.set_direction(future_direction)
+            else:
+                raise ActionException(f"Horizontal move would end up on non-"
+                                      f"walkable position {future_position}")
 
         else:
             raise ActionException(
                 f"Horizontal move outside of bounds: {future_x}")
+
+
+class VerticalMoveAction(AbstractAction):
+    steps: int
+    environment: Environment
+
+    def __init__(self, environment: Environment, steps: int):
+        super().__init__()
+        self.steps = steps
+        self.environment = environment
+
+    def apply(self, subject: Any):
+
+        current_position = subject.get_position()
+        current_y = current_position.y
+        future_y = current_y + self.steps
+
+        if 0 <= future_y < self.environment.get_tile_dimensions()[1] - 1:
+
+            future_position = Position(subject.get_position().x, future_y)
+
+            if self.environment.tile_at(future_position).is_walkable():
+                subject.set_position(future_position)
+            else:
+                raise ActionException(f"Vertical move would end up on non-"
+                                      f"walkable position {future_position}")
+        else:
+            raise ActionException(
+                f"Vertical move outside of bounds: {future_y}")

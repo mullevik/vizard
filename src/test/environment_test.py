@@ -56,7 +56,8 @@ class EnvironmentTest(unittest.TestCase):
         dummy_map = "....."  # no start
 
         def create():
-            return Environment(settings, dummy_map)
+            self.environment = Environment(settings, dummy_map)
+            return self.environment
 
         self.assertRaises(EnvironmentException, create)
 
