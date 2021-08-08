@@ -1,3 +1,4 @@
+import random
 import sys
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
@@ -8,11 +9,14 @@ from pygame.event import Event
 from pygame.surface import Surface
 from pygame.time import Clock
 
+from src.action import ActionException
 from src.constants import FRAME_RATE
 from src.environment import Environment, EnvironmentRenderer
 from src.player import Player, PlayerSprite, HorizontalMoveAction, \
     VerticalMoveAction
 from src.settings import GameSettings
+from src.shard import ShardSprite, Shard
+from src.utils import Position
 
 
 class SceneException(Exception):
@@ -79,7 +83,7 @@ class EmptyScene(Scene):
 
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
                     print("Starting game")
-                    return DefaultScene.__name__
+                    return GameScene.__name__
 
             self.screen.fill("gray")
 
@@ -87,7 +91,7 @@ class EmptyScene(Scene):
             self.clock.tick(FRAME_RATE)
 
 
-class DefaultScene(Scene):
+class GameScene(Scene):
 
     def __init__(self, screen: Surface, clock: Clock):
         super().__init__(screen, clock)
@@ -104,6 +108,40 @@ class DefaultScene(Scene):
         self.player_sprite = PlayerSprite(self.player, self.settings)
         self.player_group = pygame.sprite.GroupSingle(self.player_sprite)
 
+        self.shard_group = pygame.sprite.Group([])
+
+        self.spawn_shard(Position(3, 1))
+
+    def spawn_shard(self, position: Position):
+        self.shard_group.add(ShardSprite(self, Shard(position)))
+
+    def spawn_random_shard(self):
+        w, h = self.environment.get_tile_dimensions()
+        random_position = None
+        while not random_position or \
+                not self.environment.tile_at(random_position).is_walkable():
+            x = random.randint(0, w - 1)
+            y = random.randint(0, h - 2)
+            random_position = Position(x, y)
+
+        self.spawn_shard(random_position)
+
+    def handle_collisions(self):
+        colliding_sprites = pygame.sprite.spritecollide(
+            self.player_sprite, self.shard_group, dokill=False,
+            collided=self.is_player_colliding_with_shard)
+
+        if colliding_sprites:
+            print("COLLISION")
+            number_of_shards = len(colliding_sprites)
+            self.shard_group.remove(colliding_sprites)
+            for i in range(number_of_shards):
+                self.spawn_random_shard()
+
+    @staticmethod
+    def is_player_colliding_with_shard(player: PlayerSprite, shard: ShardSprite):
+        return player.rect.colliderect(shard.hitbox)
+
     def run(self) -> bool:
 
         while True:
@@ -113,24 +151,32 @@ class DefaultScene(Scene):
                     print("ESCAPE FROM DEFAULT SCENE")
                     return None
 
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
-                    self.player.apply_action(HorizontalMoveAction(self.environment, -1))
-                    print("MOVE LEFT")
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_j:
-                    self.player.apply_action(VerticalMoveAction(self.environment, 1))
-                    print("MOVE DOWN")
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_k:
-                    self.player.apply_action(VerticalMoveAction(self.environment, -1))
-                    print("MOVE UP")
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_l:
-                    self.player.apply_action(HorizontalMoveAction(self.environment, 1))
-                    print("MOVE RIGHT")
+                try:
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
+                        self.player.apply_action(HorizontalMoveAction(self.environment, -1))
+                        print("MOVE LEFT")
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_j:
+                        self.player.apply_action(VerticalMoveAction(self.environment, 1))
+                        print("MOVE DOWN")
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_k:
+                        self.player.apply_action(VerticalMoveAction(self.environment, -1))
+                        print("MOVE UP")
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_l:
+                        self.player.apply_action(HorizontalMoveAction(self.environment, 1))
+                        print("MOVE RIGHT")
+                except ActionException as e:
+                    print(f"INVALID ACTION: {e}")
 
             self.screen.fill("dimgray")
 
             self.environment_renderer.render(self.screen)
-            self.player_group.draw(self.screen)
             self.player_group.update()
+            self.player_group.draw(self.screen)
+
+            self.shard_group.update()
+            self.shard_group.draw(self.screen)
+
+            self.handle_collisions()
 
             pygame.display.update()
             self.clock.tick(FRAME_RATE)

@@ -2,7 +2,7 @@ import sys
 
 import pygame
 
-from src.scene import DefaultScene, EmptyScene
+from src.scene import GameScene, EmptyScene
 
 if __name__ == '__main__':
 
@@ -13,10 +13,10 @@ if __name__ == '__main__':
 
     scene_classes = {
         EmptyScene.__name__: EmptyScene,
-        DefaultScene.__name__: DefaultScene
+        GameScene.__name__: GameScene
     }
 
-    active_scene = DefaultScene(screen, clock)
+    active_scene = GameScene(screen, clock)
 
     # Application loop
     while True:

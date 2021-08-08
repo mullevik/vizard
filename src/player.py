@@ -54,9 +54,9 @@ class PlayerSprite(pygame.sprite.Sprite):
                                                    False)
         self.image = self.original_image.copy()
 
-        center_of_first_type = ((TILE_SIZE_PX // 2) * settings.scale_factor,
+        center_of_first_tile = ((TILE_SIZE_PX // 2) * settings.scale_factor,
                                 (TILE_SIZE_PX + 1) * settings.scale_factor)
-        self.rect = self.image.get_rect(midbottom=center_of_first_type)
+        self.rect = self.image.get_rect(midbottom=center_of_first_tile)
 
     def update(self, *args, **kwargs) -> None:
         self._update_rectangle_based_on_current_position()

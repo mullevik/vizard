@@ -10,6 +10,8 @@ FRAME_RATE = 60
 
 IMG_VIZZARD_IDLE =      "../assets/graphics/characters/vizzard/idle.png"
 
+IMG_SHARD_IDLE =        "../assets/graphics/effects/shard.png"
+
 IMG_TILE_DIRT =         "../assets/graphics/environment/tile_dirt.png"
 IMG_TILE_GRASS_LIST = [
                         "../assets/graphics/environment/tile_grass_01.png",
