@@ -66,6 +66,12 @@ class Environment(object):
     def tile_at(self, position: Position):
         return self.tiles[position.y][position.x]
 
+    def contains(self, position: Position):
+        w, h = self.get_tile_dimensions()
+        if 0 <= position.x < w and 0 <= position.y < h:
+            return True
+        return False
+
     def _construct_tiles(self, encoded_map: str) -> List[List[Tile]]:
         """
         :param encoded_map: constructs the tiles from a character encoded map

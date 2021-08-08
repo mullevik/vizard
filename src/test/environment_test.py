@@ -65,6 +65,18 @@ class EnvironmentTest(unittest.TestCase):
 
         self.assertRaises(EnvironmentException, create)
 
+    def test_bounds_of_the_environment(self):
+        dummy_map = "S....\n" \
+                    "....."
+
+        e = Environment(self.settings, dummy_map)
+
+        self.assertTrue(e.contains(Position(0, 0)))
+        self.assertTrue(e.contains(Position(2, 2)))
+        self.assertFalse(e.contains(Position(3, 3)))
+        self.assertFalse(e.contains(Position(500, 300)))
+        self.assertFalse(e.contains(Position(-2, 1)))
+
 
 if __name__ == '__main__':
     unittest.main()
