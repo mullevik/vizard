@@ -13,7 +13,7 @@ from src.action import ActionException
 from src.constants import FRAME_RATE
 from src.environment import Environment, EnvironmentRenderer
 from src.player import Player, PlayerSprite, HorizontalMoveAction, \
-    VerticalMoveAction, GrassStartJumpAction
+    VerticalMoveAction, GrassStartJumpAction, GrassEndJumpAction
 from src.settings import GameSettings
 from src.shard import ShardSprite, Shard
 from src.utils import Position, CardinalDirection
@@ -147,12 +147,19 @@ class GameScene(Scene):
 
     def run(self) -> bool:
 
+        is_shift_active = False
         while True:
+
             for event in self.extract_events():
 
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     print("ESCAPE FROM DEFAULT SCENE")
                     return None
+
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_LSHIFT:
+                    is_shift_active = True
+                if event.type == pygame.KEYUP and event.key == pygame.K_LSHIFT:
+                    is_shift_active = False
 
                 try:
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
@@ -175,7 +182,36 @@ class GameScene(Scene):
                         self.player.apply_action(
                             GrassStartJumpAction(self.environment,
                                                  CardinalDirection.EAST))
-                        print("GRASS JUMP RIGHT (consider stones")
+                        print("GRASS-START JUMP RIGHT (consider stones")
+                    if (event.type == pygame.KEYDOWN
+                            and event.key == pygame.K_e and not is_shift_active):
+                        self.player.apply_action(
+                            GrassEndJumpAction(self.environment,
+                                               CardinalDirection.EAST))
+                        print("GRASS-END JUMP RIGHT (consider stones)")
+
+                    if (event.type == pygame.KEYDOWN
+                            and event.key == pygame.K_e and is_shift_active):
+                        self.player.apply_action(
+                            GrassEndJumpAction(self.environment,
+                                               CardinalDirection.EAST,
+                                               ignore_stones=True))
+                        print("GRASS-END JUMP RIGHT (ignore stones)")
+
+                    if (event.type == pygame.KEYDOWN
+                            and event.key == pygame.K_b and not is_shift_active):
+                        self.player.apply_action(
+                            GrassEndJumpAction(self.environment,
+                                               CardinalDirection.WEST))
+                        print("GRASS-END JUMP LEFT (consider stones)")
+
+                    if (event.type == pygame.KEYDOWN
+                            and event.key == pygame.K_b and is_shift_active):
+                        self.player.apply_action(
+                            GrassEndJumpAction(self.environment,
+                                               CardinalDirection.WEST,
+                                               ignore_stones=True))
+                        print("GRASS-END JUMP LEFT (ignore stones)")
 
                 except ActionException as e:
                     print(f"INVALID ACTION: {e}")

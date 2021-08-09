@@ -3,7 +3,7 @@ import unittest
 from src.action import ActionException
 from src.environment import Environment, EnvironmentException
 from src.player import Player, HorizontalMoveAction, VerticalMoveAction, \
-    GrassStartJumpAction
+    GrassStartJumpAction, GrassEndJumpAction
 from src.settings import GameSettings
 from src.utils import Position, CardinalDirection
 
@@ -124,7 +124,7 @@ class SimplePlayerTest(unittest.TestCase):
             VerticalMoveAction(self.environment, 1)))
 
 
-class HorizontalMovementActionsTest(unittest.TestCase):
+class GrassJumpsTest(unittest.TestCase):
 
     def setUp(self) -> None:
         dummy_pos = "0         10        20 "
@@ -183,6 +183,137 @@ class HorizontalMovementActionsTest(unittest.TestCase):
         self.assertEqual((4, 0), self.player.get_position())
         jump_left()
         self.assertEqual((3, 0), self.player.get_position())
+        self.assertRaises(ActionException, jump_left)
+
+    def test_player_should_stone_grass_jump_correctly(self):
+        this = self
+
+        def jump_right():
+            this.player.apply_action(
+                GrassStartJumpAction(this.environment, CardinalDirection.EAST,
+                                     ignore_stones=True))
+
+        def jump_left():
+            this.player.apply_action(
+                GrassStartJumpAction(this.environment, CardinalDirection.WEST,
+                                     ignore_stones=True))
+
+        jump_right()
+        self.assertEqual((2, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((10, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((3, 1), self.player.get_position())
+        self.assertRaises(ActionException, jump_right)
+
+        jump_left()
+        self.assertEqual((17, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((7, 0), self.player.get_position())
+        self.assertRaises(ActionException, jump_left)
+
+    def test_player_should_normal_end_jump_correctly(self):
+        this = self
+
+        def jump_right():
+            this.player.apply_action(
+                GrassEndJumpAction(this.environment, CardinalDirection.EAST))
+
+        def jump_left():
+            this.player.apply_action(
+                GrassEndJumpAction(this.environment, CardinalDirection.WEST))
+
+        jump_right()
+        self.assertEqual((3, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((4, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((7, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((11, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((13, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((14, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((17, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((4, 1), self.player.get_position())
+        self.assertRaises(ActionException, jump_right)
+
+        jump_left()
+        self.assertEqual((3, 1), self.player.get_position())
+        jump_left()
+        self.assertEqual((15, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((14, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((12, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((10, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((5, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((4, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((2, 0), self.player.get_position())
+        self.assertRaises(ActionException, jump_left)
+
+    def test_player_should_stone_end_jump_correctly(self):
+        this = self
+
+        def jump_right():
+            this.player.apply_action(
+                GrassEndJumpAction(this.environment, CardinalDirection.EAST,
+                                   ignore_stones=True))
+
+        def jump_left():
+            this.player.apply_action(
+                GrassEndJumpAction(this.environment, CardinalDirection.WEST,
+                                   ignore_stones=True))
+
+        jump_right()
+        self.assertEqual((7, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((17, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((4, 1), self.player.get_position())
+        self.assertRaises(ActionException, jump_right)
+
+        jump_left()
+        self.assertEqual((3, 1), self.player.get_position())
+        jump_left()
+        self.assertEqual((10, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((2, 0), self.player.get_position())
+        self.assertRaises(ActionException, jump_left)
+
+    def test_player_should_end_jump_in_special_cases_correctly(self):
+        this = self
+        dummy_pos = "0123456789"
+        dummy_map = "o/.S./////"
+
+        self.environment = Environment(self.settings, dummy_map)
+        self.player.set_position(self.environment.get_starting_position())
+
+        def jump_right():
+            this.player.apply_action(
+                GrassEndJumpAction(this.environment, CardinalDirection.EAST))
+
+        def jump_left():
+            this.player.apply_action(
+                GrassEndJumpAction(this.environment, CardinalDirection.WEST))
+
+        jump_right()
+        self.assertEqual((9, 0), self.player.get_position())
+        self.assertRaises(ActionException, jump_right)
+
+        jump_left()
+        self.assertEqual((5, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((1, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((0, 0), self.player.get_position())
         self.assertRaises(ActionException, jump_left)
 
 

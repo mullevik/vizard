@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Any
 
 import pygame
@@ -140,13 +141,14 @@ class VerticalMoveAction(AbstractAction):
                 f"Vertical move outside of bounds: {future_y}")
 
 
-class GrassStartJumpAction(AbstractAction):
+class GrassJumpAction(AbstractAction):
+
     environment: Environment
     direction: CardinalDirection
     ignore_stones: bool
 
     def __init__(self, environment: Environment,
-                 direction: CardinalDirection, ignore_stones: bool = False):
+                 direction: CardinalDirection, ignore_stones: bool):
         super().__init__()
         self.environment = environment
         self.direction = direction
@@ -161,6 +163,7 @@ class GrassStartJumpAction(AbstractAction):
         if (self.environment.contains(future_position)
                 and self.environment.tile_at(future_position).is_walkable()):
             player.set_position(future_position)
+            player.set_direction(self.direction)
         else:
             raise ActionException(
                 f"Target position is not walkable: {future_position}")
@@ -179,6 +182,17 @@ class GrassStartJumpAction(AbstractAction):
             y += 1
         return Position(x, y)
 
+    @abstractmethod
+    def _find_goal_position(self, current_position: Position) -> Position:
+        raise NotImplementedError
+
+
+class GrassStartJumpAction(GrassJumpAction):
+
+    def __init__(self, environment: Environment, direction: CardinalDirection,
+                 ignore_stones: bool = False):
+        super().__init__(environment, direction, ignore_stones)
+
     def _find_goal_position(self, current_position: Position) -> Position:
 
         current_tile = self.environment.tile_at(current_position)
@@ -194,8 +208,7 @@ class GrassStartJumpAction(AbstractAction):
 
             if not source_tile.is_stone() and not source_tile.is_grass():
                 # starting on blank tile
-                if (tile.is_grass()
-                        or (not self.ignore_stones and tile.is_stone())):
+                if tile.is_grass() or tile.is_stone():
                     return position
 
             if source_tile.is_grass():
@@ -218,4 +231,40 @@ class GrassStartJumpAction(AbstractAction):
         return position
 
 
+class GrassEndJumpAction(GrassJumpAction):
 
+    def __init__(self, environment: Environment, direction: CardinalDirection,
+                 ignore_stones: bool = False):
+        super().__init__(environment, direction, ignore_stones)
+
+    def _find_goal_position(self, current_position: Position) -> Position:
+        current_tile = self.environment.tile_at(current_position)
+
+        height = self.environment.get_tile_dimensions()[1] - 1
+
+        previous_position = self._increment_position_with_direction(current_position)
+        next_position = self._increment_position_with_direction(previous_position)
+
+        while 0 <= previous_position.y < height:
+
+            previous_tile = self.environment.tile_at(previous_position)
+            next_tile = self.environment.tile_at(next_position)
+
+            if ((previous_tile.is_stone() or previous_tile.is_grass())
+                    and ((not next_tile.is_stone() and not next_tile.is_grass())
+                         or (not self.environment.contains(next_position)))):
+                # previous position was grass/stone and next position is blank
+                # or it is not in the bounds of the map
+                # so return previous position (end of word)
+                return previous_position
+
+            if not self.ignore_stones:
+                if previous_tile.is_grass() and next_tile.is_stone():
+                    return previous_position
+                if previous_tile.is_stone() and next_tile.is_grass():
+                    return previous_position
+
+            previous_position = next_position
+            next_position = self._increment_position_with_direction(next_position)
+
+        return previous_position
