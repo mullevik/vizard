@@ -2,8 +2,8 @@
 
 TILE_SIZE_PX = 16
 FRAME_RATE = 60
-
-
+WIDTH_IN_TILES = 20
+HEIGHT_IN_TILES = 15
 
 
 # asset paths

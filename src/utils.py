@@ -9,6 +9,12 @@ class Position(NamedTuple):
     x: int
     y: int
 
+    def __repr__(self):
+        return f"(x={self.x}, y={self.y})"
+
+    def __str__(self):
+        return self.__repr__()
+
 
 class CardinalDirection(Enum):
     NORTH = 0

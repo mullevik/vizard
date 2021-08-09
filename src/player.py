@@ -120,20 +120,102 @@ class VerticalMoveAction(AbstractAction):
         self.environment = environment
 
     def apply(self, subject: Any):
+        player: Player = subject
 
-        current_position = subject.get_position()
+        current_position = player.get_position()
         current_y = current_position.y
         future_y = current_y + self.steps
 
         if 0 <= future_y < self.environment.get_tile_dimensions()[1] - 1:
 
-            future_position = Position(subject.get_position().x, future_y)
+            future_position = Position(player.get_position().x, future_y)
 
             if self.environment.tile_at(future_position).is_walkable():
-                subject.set_position(future_position)
+                player.set_position(future_position)
             else:
                 raise ActionException(f"Vertical move would end up on non-"
                                       f"walkable position {future_position}")
         else:
             raise ActionException(
                 f"Vertical move outside of bounds: {future_y}")
+
+
+class GrassStartJumpAction(AbstractAction):
+    environment: Environment
+    direction: CardinalDirection
+    ignore_stones: bool
+
+    def __init__(self, environment: Environment,
+                 direction: CardinalDirection, ignore_stones: bool = False):
+        super().__init__()
+        self.environment = environment
+        self.direction = direction
+        self.ignore_stones = ignore_stones
+
+    def apply(self, subject: Any):
+        player: Player = subject
+        current_position = player.get_position()
+
+        future_position = self._find_goal_position(current_position)
+
+        if (self.environment.contains(future_position)
+                and self.environment.tile_at(future_position).is_walkable()):
+            player.set_position(future_position)
+        else:
+            raise ActionException(
+                f"Target position is not walkable: {future_position}")
+
+    def _increment_position_with_direction(self, position: Position) -> Position:
+        x, y = position
+        width = self.environment.get_tile_dimensions()[0]
+
+        x = x + 1 if self.direction == CardinalDirection.EAST else x - 1
+        # if x is out of bounds, jump to the next/previous row
+        if x < 0:
+            x = width - 1
+            y -= 1
+        if x > width - 1:
+            x = 0
+            y += 1
+        return Position(x, y)
+
+    def _find_goal_position(self, current_position: Position) -> Position:
+
+        current_tile = self.environment.tile_at(current_position)
+        source_tile = current_tile
+
+        position = self._increment_position_with_direction(current_position)
+
+        height = self.environment.get_tile_dimensions()[1] - 1
+
+        while 0 <= position.y < height:
+
+            tile = self.environment.tile_at(position)
+
+            if not source_tile.is_stone() and not source_tile.is_grass():
+                # starting on blank tile
+                if (tile.is_grass()
+                        or (not self.ignore_stones and tile.is_stone())):
+                    return position
+
+            if source_tile.is_grass():
+                # starting on grass tile
+                if not self.ignore_stones and tile.is_stone():
+                    return position
+
+                if not tile.is_grass() and not tile.is_stone():
+                    source_tile = tile
+
+            if source_tile.is_stone():
+                # starting on stone tile
+                if not self.ignore_stones and tile.is_grass():
+                    return position
+                if not tile.is_grass() and not tile.is_stone():
+                    source_tile = tile
+
+            position = self._increment_position_with_direction(position)
+
+        return position
+
+
+

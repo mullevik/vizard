@@ -13,10 +13,10 @@ from src.action import ActionException
 from src.constants import FRAME_RATE
 from src.environment import Environment, EnvironmentRenderer
 from src.player import Player, PlayerSprite, HorizontalMoveAction, \
-    VerticalMoveAction
+    VerticalMoveAction, GrassStartJumpAction
 from src.settings import GameSettings
 from src.shard import ShardSprite, Shard
-from src.utils import Position
+from src.utils import Position, CardinalDirection
 
 
 class SceneException(Exception):
@@ -100,8 +100,10 @@ class GameScene(Scene):
             **yaml.load(open("../config.yaml"), Loader=yaml.FullLoader))
 
         self.environment = Environment(self.settings,
-                                       open("../assets/maps/default.txt", "r").read())
-        self.environment_renderer = EnvironmentRenderer(self.environment, self.settings)
+                                       open("../assets/maps/default.txt",
+                                            "r").read())
+        self.environment_renderer = EnvironmentRenderer(self.environment,
+                                                        self.settings)
 
         self.player = Player()
         self.player.set_position(self.environment.get_starting_position())
@@ -139,7 +141,8 @@ class GameScene(Scene):
                 self.spawn_random_shard()
 
     @staticmethod
-    def is_player_colliding_with_shard(player: PlayerSprite, shard: ShardSprite):
+    def is_player_colliding_with_shard(player: PlayerSprite,
+                                       shard: ShardSprite):
         return player.rect.colliderect(shard.hitbox)
 
     def run(self) -> bool:
@@ -153,21 +156,31 @@ class GameScene(Scene):
 
                 try:
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
-                        self.player.apply_action(HorizontalMoveAction(self.environment, -1))
+                        self.player.apply_action(
+                            HorizontalMoveAction(self.environment, -1))
                         print("MOVE LEFT")
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_j:
-                        self.player.apply_action(VerticalMoveAction(self.environment, 1))
+                        self.player.apply_action(
+                            VerticalMoveAction(self.environment, 1))
                         print("MOVE DOWN")
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_k:
-                        self.player.apply_action(VerticalMoveAction(self.environment, -1))
+                        self.player.apply_action(
+                            VerticalMoveAction(self.environment, -1))
                         print("MOVE UP")
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_l:
-                        self.player.apply_action(HorizontalMoveAction(self.environment, 1))
+                        self.player.apply_action(
+                            HorizontalMoveAction(self.environment, 1))
                         print("MOVE RIGHT")
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_w:
+                        self.player.apply_action(
+                            GrassStartJumpAction(self.environment,
+                                                 CardinalDirection.EAST))
+                        print("GRASS JUMP RIGHT (consider stones")
+
                 except ActionException as e:
                     print(f"INVALID ACTION: {e}")
 
-            self.screen.fill("dimgray")
+            self.screen.fill("cadetblue2")
 
             self.environment_renderer.render(self.screen)
             self.player_group.update()
@@ -180,5 +193,3 @@ class GameScene(Scene):
 
             pygame.display.update()
             self.clock.tick(FRAME_RATE)
-
-

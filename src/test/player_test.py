@@ -2,12 +2,13 @@ import unittest
 
 from src.action import ActionException
 from src.environment import Environment, EnvironmentException
-from src.player import Player, HorizontalMoveAction, VerticalMoveAction
+from src.player import Player, HorizontalMoveAction, VerticalMoveAction, \
+    GrassStartJumpAction
 from src.settings import GameSettings
-from src.utils import Position
+from src.utils import Position, CardinalDirection
 
 
-class PlayerTest(unittest.TestCase):
+class SimplePlayerTest(unittest.TestCase):
 
     def setUp(self) -> None:
         dummy_map = "..........\n" \
@@ -89,7 +90,6 @@ class PlayerTest(unittest.TestCase):
         self.assertEqual((4, 0), self.player.get_position())
 
     def test_player_should_not_move_vertically_outside_the_bounds(self):
-
         # Two steps up - OK
         self.player.apply_action(VerticalMoveAction(self.environment, -2))
         self.assertEqual((4, 0), self.player.get_position())
@@ -122,6 +122,68 @@ class PlayerTest(unittest.TestCase):
         # One step down - not OK
         self.assertRaises(ActionException, lambda: self.player.apply_action(
             VerticalMoveAction(self.environment, 1)))
+
+
+class HorizontalMovementActionsTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        dummy_pos = "0         10        20 "
+        dummy_pos = "0123456789|123456789|12"
+        dummy_map = "S.//o///..oo//o///.. \n" \
+                    " ..//..              "
+
+        self.settings = GameSettings(scale_factor=1.)
+        self.environment = Environment(self.settings, dummy_map)
+        self.player = Player()
+        self.player.set_position(self.environment.get_starting_position())
+
+    def test_player_should_start_at_the_start_position(self):
+        self.assertEqual((0, 0), self.player.get_position())
+
+    def test_player_should_normal_grass_jump_correctly(self):
+        this = self
+
+        def jump_right():
+            this.player.apply_action(
+                GrassStartJumpAction(this.environment, CardinalDirection.EAST))
+
+        def jump_left():
+            this.player.apply_action(
+                GrassStartJumpAction(this.environment, CardinalDirection.WEST))
+
+        jump_right()
+        self.assertEqual((2, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((4, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((5, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((10, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((12, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((14, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((15, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((3, 1), self.player.get_position())
+        self.assertRaises(ActionException, jump_right)
+
+        jump_left()
+        self.assertEqual((17, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((14, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((13, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((11, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((7, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((4, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((3, 0), self.player.get_position())
+        self.assertRaises(ActionException, jump_left)
 
 
 if __name__ == '__main__':

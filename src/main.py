@@ -1,14 +1,20 @@
 import sys
 
 import pygame
+import yaml
 
+from src.constants import WIDTH_IN_TILES, TILE_SIZE_PX, HEIGHT_IN_TILES
 from src.scene import GameScene, EmptyScene
+from src.settings import GameSettings
 
 if __name__ == '__main__':
 
+    settings = GameSettings(
+        **yaml.load(open("../config.yaml"), Loader=yaml.FullLoader))
     clock = pygame.time.Clock()
     pygame.init()
-    screen = pygame.display.set_mode((800, 600))
+    screen = pygame.display.set_mode((int(WIDTH_IN_TILES * TILE_SIZE_PX * settings.scale_factor),
+                                      int(HEIGHT_IN_TILES * TILE_SIZE_PX * settings.scale_factor)))
     pygame.display.set_caption("Vizzard")
 
     scene_classes = {
