@@ -4,7 +4,8 @@ from typing import List, TYPE_CHECKING, Tuple
 
 from pygame import Surface
 
-from src.constants import IMG_TILE_DIRT, IMG_TILE_GRASS_LIST, IMG_TILE_STONE_LIST, \
+from src.constants import IMG_TILE_DIRT, IMG_TILE_GRASS_LIST, \
+    IMG_TILE_STONE_LIST, \
     TILE_SIZE_PX
 from src.settings import GameSettings
 from src.utils import Position, load_scaled_surface
@@ -13,6 +14,11 @@ from src.renderer import AbstractRenderer
 
 
 class EnvironmentException(Exception):
+    pass
+
+
+class CharacterEncodedMap(str):
+    """String representing a character-encoded map layout"""
     pass
 
 
@@ -40,7 +46,8 @@ class Environment(object):
     tiles: List[List[Tile]]  # tile matrix indexed by (y, x)
     starting_position: Position
 
-    def __init__(self, settings: GameSettings, encoded_map: str):
+    def __init__(self, settings: GameSettings,
+                 encoded_map: CharacterEncodedMap):
         self.settings = settings
         self.tiles = self._construct_tiles(encoded_map)
         self.starting_position = self._get_starting_position(encoded_map)
@@ -72,7 +79,8 @@ class Environment(object):
             return True
         return False
 
-    def _construct_tiles(self, encoded_map: str) -> List[List[Tile]]:
+    def _construct_tiles(self,
+                         encoded_map: CharacterEncodedMap) -> List[List[Tile]]:
         """
         :param encoded_map: constructs the tiles from a character encoded map
         :return: matrix of tiles
@@ -173,7 +181,8 @@ class EnvironmentRenderer(AbstractRenderer):
 
         if tile.is_dirt():
             surfaces.append(
-                load_scaled_surface(IMG_TILE_DIRT, scale_factor, has_alpha=False))
+                load_scaled_surface(IMG_TILE_DIRT, scale_factor,
+                                    has_alpha=False))
         if tile.is_grass():
             surfaces.append(
                 load_scaled_surface(random.choice(IMG_TILE_GRASS_LIST),
