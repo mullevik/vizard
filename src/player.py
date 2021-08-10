@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import pygame
 from pygame.rect import Rect
@@ -7,10 +7,12 @@ from pygame.sprite import AbstractGroup
 from pygame.surface import Surface
 
 from src.action import AbstractAction, ActionException
-from src.constants import TILE_SIZE_PX, IMG_VIZZARD_IDLE
+from src.constants import TILE_SIZE_PX, IMG_VIZZARD_IDLE, HEIGHT_IN_TILES
 from src.environment import Environment
-from src.settings import GameSettings
 from src.utils import load_scaled_surface, Position, CardinalDirection
+
+if TYPE_CHECKING:
+    from src.scene import GameScene
 
 
 class Player(object):
@@ -35,39 +37,42 @@ class Player(object):
 
 
 class PlayerSprite(pygame.sprite.Sprite):
+    scene: 'GameScene'
     player: Player
-    settings: GameSettings
     image: Surface
     original_image: Surface
     flipped_image: Surface
     rect: Rect
 
-    def __init__(self, player: Player, settings: GameSettings,
+    def __init__(self, scene: 'GameScene', player: Player,
                  *groups: AbstractGroup):
         super().__init__(*groups)
 
+        self.scene = scene
         self.player = player
-        self.settings = settings
 
-        self.original_image = load_scaled_surface(IMG_VIZZARD_IDLE,
-                                                  settings.scale_factor)
+        scale_factor = scene.settings.scale_factor
+
+        self.original_image = load_scaled_surface(IMG_VIZZARD_IDLE, scale_factor)
         self.flipped_image = pygame.transform.flip(self.original_image, True,
                                                    False)
         self.image = self.original_image.copy()
 
-        center_of_first_tile = ((TILE_SIZE_PX // 2) * settings.scale_factor,
-                                (TILE_SIZE_PX + 1) * settings.scale_factor)
+        center_of_first_tile = ((TILE_SIZE_PX // 2) * scale_factor,
+                                (TILE_SIZE_PX + 1) * scale_factor)
         self.rect = self.image.get_rect(midbottom=center_of_first_tile)
 
     def update(self, *args, **kwargs) -> None:
+        self._check_for_vertical_shift()
         self._update_rectangle_based_on_current_position()
 
     def _update_rectangle_based_on_current_position(self):
         x = (self.player.position.x * TILE_SIZE_PX) + (TILE_SIZE_PX // 2)
-        x = x * self.settings.scale_factor
+        x = x * self.scene.settings.scale_factor
 
-        y = (self.player.position.y * TILE_SIZE_PX) + (TILE_SIZE_PX + 1)
-        y = y * self.settings.scale_factor
+        y = ((self.player.position.y - self.scene.vertical_shift) * TILE_SIZE_PX) \
+            + (TILE_SIZE_PX + 1)
+        y = y * self.scene.settings.scale_factor
 
         self.rect = self.image.get_rect(midbottom=(x, y))
 
@@ -75,6 +80,13 @@ class PlayerSprite(pygame.sprite.Sprite):
             self.image = self.flipped_image
         else:
             self.image = self.original_image
+
+    def _check_for_vertical_shift(self):
+        current_screen_position = self.player.position.y - self.scene.vertical_shift
+        if current_screen_position < 1:
+            self.scene.shift_view(0 + (current_screen_position - 1))
+        elif current_screen_position > HEIGHT_IN_TILES - 2:
+            self.scene.shift_view((current_screen_position + 1) - (HEIGHT_IN_TILES - 1))
 
 
 class HorizontalMoveAction(AbstractAction):

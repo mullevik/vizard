@@ -63,7 +63,7 @@ class ShardSprite(pygame.sprite.Sprite):
         x = (position.x * TILE_SIZE_PX) + (TILE_SIZE_PX // 2)
         x = x * scale_factor
 
-        y = (position.y * TILE_SIZE_PX) + (TILE_SIZE_PX // 2)
+        y = ((position.y - self.scene.vertical_shift) * TILE_SIZE_PX) + (TILE_SIZE_PX // 2)
         y = y * scale_factor
 
         self.rect.center = (x, y)

@@ -102,22 +102,35 @@ class GameScene(Scene):
         self.environment = Environment(self.settings,
                                        open("../assets/maps/default.txt",
                                             "r").read())
+        self.vertical_shift = 0
         self.environment_renderer = EnvironmentRenderer(self.environment,
                                                         self.settings)
 
         self.player = Player()
         self.player.set_position(self.environment.get_starting_position())
-        self.player_sprite = PlayerSprite(self.player, self.settings)
+        self.player_sprite = PlayerSprite(self, self.player)
         self.player_group = pygame.sprite.GroupSingle(self.player_sprite)
 
         self.shard_group = pygame.sprite.Group([])
 
         self.spawn_shard(Position(3, 1))
 
-    def spawn_shard(self, position: Position):
+    def shift_view(self, amount: int) -> int:
+        """Shift the view of the world by +amount
+        :param amount: by how many rows down should the world shift
+        :return the new vertical_shift
+        """
+        self.vertical_shift += amount
+        return self.vertical_shift
+
+    def spawn_shard(self, position: Position) -> None:
+        """Spawns a shard at a given position.
+        :param position: where to spawn a shard
+        """
         self.shard_group.add(ShardSprite(self, Shard(position)))
 
-    def spawn_random_shard(self):
+    def spawn_random_shard(self) -> None:
+        """Spawns a shard at a random walkable position."""
         w, h = self.environment.get_tile_dimensions()
         random_position = None
         while not random_position or \
@@ -147,7 +160,7 @@ class GameScene(Scene):
 
     def run(self) -> bool:
 
-        is_shift_active = False
+        is_shift_key_active = False
         while True:
 
             for event in self.extract_events():
@@ -157,9 +170,9 @@ class GameScene(Scene):
                     return None
 
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_LSHIFT:
-                    is_shift_active = True
+                    is_shift_key_active = True
                 if event.type == pygame.KEYUP and event.key == pygame.K_LSHIFT:
-                    is_shift_active = False
+                    is_shift_key_active = False
 
                 try:
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
@@ -184,14 +197,14 @@ class GameScene(Scene):
                                                  CardinalDirection.EAST))
                         print("GRASS-START JUMP RIGHT (consider stones")
                     if (event.type == pygame.KEYDOWN
-                            and event.key == pygame.K_e and not is_shift_active):
+                            and event.key == pygame.K_e and not is_shift_key_active):
                         self.player.apply_action(
                             GrassEndJumpAction(self.environment,
                                                CardinalDirection.EAST))
                         print("GRASS-END JUMP RIGHT (consider stones)")
 
                     if (event.type == pygame.KEYDOWN
-                            and event.key == pygame.K_e and is_shift_active):
+                            and event.key == pygame.K_e and is_shift_key_active):
                         self.player.apply_action(
                             GrassEndJumpAction(self.environment,
                                                CardinalDirection.EAST,
@@ -199,14 +212,14 @@ class GameScene(Scene):
                         print("GRASS-END JUMP RIGHT (ignore stones)")
 
                     if (event.type == pygame.KEYDOWN
-                            and event.key == pygame.K_b and not is_shift_active):
+                            and event.key == pygame.K_b and not is_shift_key_active):
                         self.player.apply_action(
                             GrassEndJumpAction(self.environment,
                                                CardinalDirection.WEST))
                         print("GRASS-END JUMP LEFT (consider stones)")
 
                     if (event.type == pygame.KEYDOWN
-                            and event.key == pygame.K_b and is_shift_active):
+                            and event.key == pygame.K_b and is_shift_key_active):
                         self.player.apply_action(
                             GrassEndJumpAction(self.environment,
                                                CardinalDirection.WEST,
@@ -216,13 +229,13 @@ class GameScene(Scene):
                 except ActionException as e:
                     print(f"INVALID ACTION: {e}")
 
-            self.screen.fill("cadetblue2")
+            self.screen.fill("dimgray")
 
-            self.environment_renderer.render(self.screen)
             self.player_group.update()
-            self.player_group.draw(self.screen)
-
             self.shard_group.update()
+
+            self.environment_renderer.render(self.screen, self.vertical_shift)
+            self.player_group.draw(self.screen)
             self.shard_group.draw(self.screen)
 
             self.handle_collisions()

@@ -154,7 +154,8 @@ class EnvironmentRenderer(AbstractRenderer):
 
         self.surfaces = self._prepare_surfaces_for_tiles()
 
-    def render(self, screen: Surface):
+    def render(self, screen: Surface, *args, **kwargs):
+        vertical_shift = args[0]
 
         w, h = self.environment.get_tile_dimensions()
 
@@ -165,7 +166,7 @@ class EnvironmentRenderer(AbstractRenderer):
 
                 coordinates = (
                     int(x * TILE_SIZE_PX * self.settings.scale_factor),
-                    int(y * TILE_SIZE_PX * self.settings.scale_factor))
+                    int((y - vertical_shift) * TILE_SIZE_PX * self.settings.scale_factor))
 
                 for surface in surfaces:
                     screen.blit(surface, coordinates)

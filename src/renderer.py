@@ -10,6 +10,6 @@ class AbstractRenderer(ABC):
     screen: Surface  # screen to render to
 
     @abstractmethod
-    def render(self, surface: Surface) -> None:
+    def render(self, surface: Surface, *args, **kwargs) -> None:
         """Draw frames onto the given surface."""
         raise NotImplementedError
