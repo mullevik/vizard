@@ -127,8 +127,8 @@ class SimplePlayerTest(unittest.TestCase):
 class GrassJumpsTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        dummy_pos = "0         10        20 "
-        dummy_pos = "0123456789|123456789|12"
+        #            0         10        20 "
+        #            0123456789|123456789|12"
         dummy_map = "S.//o///..oo//o///.. \n" \
                     " ..//..              "
 
@@ -290,7 +290,7 @@ class GrassJumpsTest(unittest.TestCase):
 
     def test_player_should_end_jump_in_special_cases_correctly(self):
         this = self
-        dummy_pos = "0123456789"
+        #            0123456789
         dummy_map = "o/.S./////"
 
         self.environment = Environment(self.settings, dummy_map)
