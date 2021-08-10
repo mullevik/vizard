@@ -10,7 +10,9 @@ HEIGHT_IN_TILES = 15
 
 IMG_VIZZARD_IDLE =      "../assets/graphics/characters/vizzard/idle.png"
 
-IMG_SHARD_IDLE =        "../assets/graphics/effects/shard.png"
+IMG_SHARD =             "../assets/graphics/effects/shard/shard.png"
+ANIM_SHARD_IDLE =       "../assets/graphics/effects/shard/animation/idle/"
+
 
 IMG_TILE_DIRT =         "../assets/graphics/environment/tile_dirt.png"
 IMG_TILE_GRASS_LIST = [
