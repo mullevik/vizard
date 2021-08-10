@@ -1,10 +1,14 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List
+from typing import List, Dict
 
 from pygame.surface import Surface
 
 from src.utils import Milliseconds
+
+
+class AnimationException(Exception):
+    pass
 
 
 class Animation(object):
@@ -22,15 +26,23 @@ class Animation(object):
         self.start_time = 0
         self.current_time = 0
 
-    def start(self, current_time: Milliseconds) -> None:
+    def start(self, current_time: Milliseconds = None) -> None:
         """Starts the animation from the beginning."""
         self.current_time = current_time
         self.start_time = current_time
 
+    def get_start_time(self) -> Milliseconds:
+        """Returns the start_time.
+        :return: the timestamp that marks the beginning of this animation
+        """
+        return self.start_time
+
+    def get_duration(self) -> Milliseconds:
+        return len(self.frames) * self.speed
+
     def is_over(self) -> bool:
         return (not self.loop
-                and self._get_animation_time() >
-                self.speed * (len(self.frames) - 1))
+                and self._get_animation_time() >= self.get_duration())
 
     def get_image(self, current_time: Milliseconds) -> Surface:
         self.current_time = current_time
@@ -52,6 +64,58 @@ class Animation(object):
     def _get_animation_time(self) -> Milliseconds:
         return self.current_time - self.start_time
 
+
+class FallbackAnimator(object):
+    fallback_animation_name: str
+    animations: Dict[str, Animation]
+    current_animation: Animation
+
+    def __init__(self, animations: Dict[str, Animation]):
+        self.animations = animations
+
+        n_looping_animations = 0
+        for animation_name, animation in animations.items():
+            if animation.loop:
+                self.fallback_animation_name = animation_name
+                n_looping_animations += 1
+
+        if n_looping_animations != 1:
+            raise AnimationException(f"Wrong number of looping animations provided, "
+                                     f"expected 1, got {n_looping_animations}")
+
+        self.current_animation = animations[self.fallback_animation_name]
+
+    def start(self, current_time: Milliseconds) -> None:
+        self.current_animation.start(current_time)
+
+    def start_animation(self, animation_name: str,
+                        current_time: Milliseconds) -> None:
+        if animation_name not in self.animations:
+            raise AnimationException(f"Animation '{animation_name}' not found "
+                                     f"in this animator")
+        self.current_animation = self.animations[animation_name]
+        self.current_animation.start(current_time)
+
+    def get_image(self, current_time: Milliseconds) -> Surface:
+
+        current_animation_frame = self.current_animation.get_image(current_time)
+
+        if not self.current_animation.is_over():
+            # current animation frame is from the correct animation
+            return current_animation_frame
+        else:
+            # current animation frame is already out of date
+            # calculate when should had the fallback animation started
+            end = self.current_animation.get_start_time() + \
+                  self.current_animation.get_duration()
+
+            if end > current_time:
+                raise AnimationException("Unexpected animator timing")
+
+            # switch to fallback animation
+            self.current_animation = self.animations[self.fallback_animation_name]
+            self.current_animation.start(end)
+            return self.current_animation.get_image(current_time)
 
 
 

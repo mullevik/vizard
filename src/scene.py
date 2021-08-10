@@ -178,6 +178,7 @@ class GameScene(Scene):
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
                         self.player.apply_action(
                             HorizontalMoveAction(self.environment, -1))
+                        self.player_sprite.animator.start_animation("dash", pygame.time.get_ticks())
                         print("MOVE LEFT")
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_j:
                         self.player.apply_action(
@@ -190,6 +191,7 @@ class GameScene(Scene):
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_l:
                         self.player.apply_action(
                             HorizontalMoveAction(self.environment, 1))
+                        self.player_sprite.animator.start_animation("dash", pygame.time.get_ticks())
                         print("MOVE RIGHT")
                     if event.type == pygame.KEYDOWN and event.key == pygame.K_w:
                         self.player.apply_action(

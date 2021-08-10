@@ -8,7 +8,9 @@ HEIGHT_IN_TILES = 12
 
 # asset paths
 
-IMG_VIZZARD_IDLE =      "../assets/graphics/characters/vizzard/idle.png"
+IMG_VIZARD =            "../assets/graphics/characters/vizard/vizard.png"
+ANIM_VIZARD_IDLE =      "../assets/graphics/characters/vizard/animation/idle/"
+ANIM_VIZARD_DASH =      "../assets/graphics/characters/vizard/animation/dash/"
 
 IMG_SHARD =             "../assets/graphics/effects/shard/shard.png"
 ANIM_SHARD_IDLE =       "../assets/graphics/effects/shard/animation/idle/"

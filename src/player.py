@@ -7,9 +7,10 @@ from pygame.sprite import AbstractGroup
 from pygame.surface import Surface
 
 from src.action import AbstractAction, ActionException
-from src.constants import TILE_SIZE_PX, IMG_VIZZARD_IDLE, HEIGHT_IN_TILES
+from src.animation import FallbackAnimator, Animation
+from src.constants import *
 from src.environment import Environment
-from src.utils import load_scaled_surface, Position, CardinalDirection
+from src.utils import Position, CardinalDirection, load_scaled_surfaces
 
 if TYPE_CHECKING:
     from src.scene import GameScene
@@ -39,9 +40,8 @@ class Player(object):
 class PlayerSprite(pygame.sprite.Sprite):
     scene: 'GameScene'
     player: Player
+    animator: FallbackAnimator
     image: Surface
-    original_image: Surface
-    flipped_image: Surface
     rect: Rect
 
     def __init__(self, scene: 'GameScene', player: Player,
@@ -53,10 +53,14 @@ class PlayerSprite(pygame.sprite.Sprite):
 
         scale_factor = scene.settings.scale_factor
 
-        self.original_image = load_scaled_surface(IMG_VIZZARD_IDLE, scale_factor)
-        self.flipped_image = pygame.transform.flip(self.original_image, True,
-                                                   False)
-        self.image = self.original_image.copy()
+        idle_frames = load_scaled_surfaces(ANIM_VIZARD_IDLE, scale_factor)
+        dash_frames = load_scaled_surfaces(ANIM_VIZARD_DASH, scale_factor)
+        self.image = idle_frames[0]
+        self.animator = FallbackAnimator({
+            "idle": Animation(idle_frames, 600, loop=True),
+            "dash": Animation(dash_frames, 100)
+        })
+        self.animator.start(pygame.time.get_ticks())
 
         center_of_first_tile = ((TILE_SIZE_PX // 2) * scale_factor,
                                 (TILE_SIZE_PX + 1) * scale_factor)
@@ -76,10 +80,11 @@ class PlayerSprite(pygame.sprite.Sprite):
 
         self.rect = self.image.get_rect(midbottom=(x, y))
 
+        image = self.animator.get_image(pygame.time.get_ticks())
         if self.player.direction == CardinalDirection.WEST:
-            self.image = self.flipped_image
+            self.image = pygame.transform.flip(image, True, False)
         else:
-            self.image = self.original_image
+            self.image = image
 
     def _check_for_vertical_shift(self):
         current_screen_position = self.player.position.y - self.scene.vertical_shift

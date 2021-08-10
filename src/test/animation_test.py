@@ -1,6 +1,6 @@
 import unittest
 
-from src.animation import Animation
+from src.animation import Animation, FallbackAnimator, AnimationException
 from src.environment import Environment, EnvironmentException
 from src.settings import GameSettings
 from src.utils import Position
@@ -12,6 +12,8 @@ class AnimationTest(unittest.TestCase):
         dummy_frames = ["0", "1", "2", "3", "4"]
         dummy_delay = 100
         a = Animation(dummy_frames, dummy_delay)
+
+        self.assertEqual(500, a.get_duration())
 
         # start animation at 10_000-th millisecond
         a.start(10_000)
@@ -54,6 +56,64 @@ class AnimationTest(unittest.TestCase):
         self.assertFalse(a.is_over())
         self.assertEqual("1", a.get_image(410))
         self.assertFalse(a.is_over())
+
+
+class FallbackAnimatorTest(unittest.TestCase):
+
+    def test_animator_should_be_initialized_correctly(self):
+        dummy_frames = ["A", "B", "C"]
+        dummy_delay = 100
+        a1 = Animation(dummy_frames, dummy_delay, loop=True)
+
+        animator = FallbackAnimator({"0": a1})
+
+        animator.start(10_000)
+        self.assertEqual("A", animator.get_image(10_000))
+
+    def test_animator_should_not_initialize_with_bad_animations(self):
+        dummy_frames = ["A", "B", "C"]
+        dummy_delay = 100
+        a1 = Animation(dummy_frames, dummy_delay, loop=True)
+
+        dummy_frames = ["E", "F", "G"]
+        dummy_delay = 50
+        a2 = Animation(dummy_frames, dummy_delay, loop=True)
+
+        dummy_frames = ["H", "I", "J"]
+        dummy_delay = 10
+        a3 = Animation(dummy_frames, dummy_delay)
+
+        dummy_frames = ["K", "L", "M"]
+        dummy_delay = 2000
+        a4 = Animation(dummy_frames, dummy_delay)
+
+        self.assertRaises(AnimationException,
+                          lambda: FallbackAnimator({"0": a1, "1": a2}))
+        self.assertRaises(AnimationException,
+                          lambda: FallbackAnimator({"2": a3, "3": a4}))
+
+    def test_animator_should_animate_correctly(self):
+        a1 = Animation(["A", "B"], 100, loop=True)
+
+        a2 = Animation(["C", "D"], 10)
+
+        animator = FallbackAnimator({"0": a1, "1": a2})
+        animator.start(10_000)
+
+        self.assertEqual("A", animator.get_image(10_000))
+        self.assertEqual("B", animator.get_image(10_120))
+        # looping animation loops
+        self.assertEqual("A", animator.get_image(10_210))
+
+        # start other animation
+        animator.start_animation("1", 10_210)
+        self.assertEqual("C", animator.get_image(10_210))
+        self.assertEqual("C", animator.get_image(10_219))
+        self.assertEqual("D", animator.get_image(10_225))
+        # fallback to looping animation
+        self.assertEqual("A", animator.get_image(10_235))
+        self.assertEqual("A", animator.get_image(10_329))
+        self.assertEqual("B", animator.get_image(10_330))
 
 
 if __name__ == '__main__':

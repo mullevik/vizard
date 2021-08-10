@@ -45,4 +45,4 @@ def load_scaled_surfaces(path_to_directory: str, scale_factor: float,
     files = os.listdir(path_to_directory)
     return [load_scaled_surface(os.path.join(path_to_directory, file),
                                 scale_factor, has_alpha=has_alpha)
-            for file in files]
+            for file in sorted(files)]
