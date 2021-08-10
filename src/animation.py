@@ -12,6 +12,11 @@ class AnimationException(Exception):
 
 
 class Animation(object):
+    """
+    Class defining a discrete animation of multiple frames.
+    The 'speed' determines the number of milliseconds between two
+    frames and is constant during the whole animation.
+    """
     frames: List[Surface]
     speed: Milliseconds  # number of milliseconds between two frames
     loop: bool  # whether to loop this animation
@@ -45,6 +50,9 @@ class Animation(object):
                 and self._get_animation_time() >= self.get_duration())
 
     def get_image(self, current_time: Milliseconds) -> Surface:
+        """Get the corresponding animation frame.
+        :return: the surface of the frame that should be active at 'current_time'
+        """
         self.current_time = current_time
         time = self._get_animation_time()
 
@@ -66,6 +74,12 @@ class Animation(object):
 
 
 class FallbackAnimator(object):
+    """
+    An animator that has one looping animation (idle or fallback)
+    and multiple one-shot animations.
+    Whenever a one-shot animation ends,
+    the animator switches to the looping animation.
+    """
     fallback_animation_name: str
     animations: Dict[str, Animation]
     current_animation: Animation
@@ -86,10 +100,13 @@ class FallbackAnimator(object):
         self.current_animation = animations[self.fallback_animation_name]
 
     def start(self, current_time: Milliseconds) -> None:
+        """Start animating the looping animation."""
         self.current_animation.start(current_time)
 
     def start_animation(self, animation_name: str,
                         current_time: Milliseconds) -> None:
+        """Start any animation by its name.
+        The new animation starts immediately."""
         if animation_name not in self.animations:
             raise AnimationException(f"Animation '{animation_name}' not found "
                                      f"in this animator")
@@ -97,6 +114,8 @@ class FallbackAnimator(object):
         self.current_animation.start(current_time)
 
     def get_image(self, current_time: Milliseconds) -> Surface:
+        """Get the corresponding frame of current animation.
+        :return: the surface of the animation frame"""
 
         current_animation_frame = self.current_animation.get_image(current_time)
 
