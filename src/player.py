@@ -1,6 +1,9 @@
 from abc import abstractmethod
 from typing import Any, TYPE_CHECKING
 import logging
+
+from src.particle import ParticleSprite
+
 log = logging.getLogger(__name__)
 
 import pygame
@@ -12,7 +15,7 @@ from src.action import AbstractAction, ActionException
 from src.animation import FallbackAnimator, Animation
 from src.constants import *
 from src.environment import Environment
-from src.utils import Position, CardinalDirection, load_scaled_surfaces
+from src.utils import Position, CardinalDirection, load_scaled_surfaces, Point
 
 if TYPE_CHECKING:
     from src.scene import GameScene
@@ -55,12 +58,12 @@ class PlayerSprite(pygame.sprite.Sprite):
 
         scale_factor = scene.settings.scale_factor
 
-        idle_frames = load_scaled_surfaces(ANIM_VIZARD_IDLE, scale_factor)
-        dash_frames = load_scaled_surfaces(ANIM_VIZARD_DASH, scale_factor)
-        self.image = idle_frames[0]
+        idle_animation = self.scene.animation_manager.get_animation("idle")
+        dash_animation = self.scene.animation_manager.get_animation("dash")
+        self.image = idle_animation.frames[0]
         self.animator = FallbackAnimator({
-            "idle": Animation(idle_frames, 600, loop=True),
-            "dash": Animation(dash_frames, 100)
+            "idle": idle_animation,
+            "dash": dash_animation
         })
         self.animator.start(pygame.time.get_ticks())
 
@@ -77,7 +80,7 @@ class PlayerSprite(pygame.sprite.Sprite):
         x = x * self.scene.settings.scale_factor
 
         y = ((
-                         self.scene.player.position.y - self.scene.vertical_shift) * TILE_SIZE_PX) \
+                     self.scene.player.position.y - self.scene.vertical_shift) * TILE_SIZE_PX) \
             + (TILE_SIZE_PX + 1)
         y = y * self.scene.settings.scale_factor
 
@@ -278,7 +281,8 @@ class GrassEndJumpAction(GrassJumpAction):
                     and ((
                                  not next_tile.is_stone() and not next_tile.is_grass())
                          or (
-                         not self.environment.contains(next_position)))):
+                                 not self.environment.contains(
+                                     next_position)))):
                 # previous position was grass/stone and next position is blank
                 # or it is not in the bounds of the map
                 # so return previous position (end of word)
@@ -308,10 +312,20 @@ class PlayerController(object):
         for char in text_input:
             try:
                 if char == "h":
+                    last_position = self.scene.player.get_position()
                     self.scene.player.apply_action(
                         HorizontalMoveAction(self.scene.environment, -1))
                     self.scene.player_sprite.animator.start_animation(
                         "dash", pygame.time.get_ticks())
+
+                    self.scene.spawn_particle(
+                        ParticleSprite(self.scene,
+                                       self.scene.animation_manager.get_animation(
+                                           "dash-left-particle"),
+                                       last_position,
+                                       px_offset=Position(-TILE_SIZE_PX // 2,
+                                                          1)))
+
                 if char == "j":
                     self.scene.player.apply_action(
                         VerticalMoveAction(self.scene.environment, 1))
@@ -319,10 +333,19 @@ class PlayerController(object):
                     self.scene.player.apply_action(
                         VerticalMoveAction(self.scene.environment, -1))
                 if char == "l":
+                    last_position = self.scene.player.get_position()
                     self.scene.player.apply_action(
                         HorizontalMoveAction(self.scene.environment, 1))
                     self.scene.player_sprite.animator.start_animation(
                         "dash", pygame.time.get_ticks())
+                    self.scene.spawn_particle(
+                        ParticleSprite(self.scene,
+                                       self.scene.animation_manager.get_animation(
+                                           "dash-right-particle"),
+                                       last_position,
+                                       px_offset=Position(TILE_SIZE_PX // 2,
+                                                          1)))
+
                 if char == "w":
                     self.scene.player.apply_action(
                         GrassStartJumpAction(self.scene.environment,

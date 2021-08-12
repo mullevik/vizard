@@ -1,9 +1,26 @@
 import unittest
+from dataclasses import dataclass
+from typing import cast
 
-from src.animation import Animation, FallbackAnimator, AnimationException
+import pygame
+
+from src.animation import Animation, FallbackAnimator, AnimationException, \
+    LinearAlphaFadeAnimation
 from src.environment import Environment, EnvironmentException
 from src.settings import GameSettings
 from src.utils import Position
+
+
+@dataclass
+class MockedAlphaSurface:
+    frame: str  # test frame
+    alpha: int = 255
+
+    def set_alpha(self, value: int):
+        self.alpha = value
+
+    def get_alpha(self) -> int:
+        return self.alpha
 
 
 class AnimationTest(unittest.TestCase):
@@ -56,6 +73,44 @@ class AnimationTest(unittest.TestCase):
         self.assertFalse(a.is_over())
         self.assertEqual("1", a.get_image(410))
         self.assertFalse(a.is_over())
+
+
+class LinearAlphaFadeAnimationTest(unittest.TestCase):
+
+    def test_animation_should_end_correctly(self):
+
+        dummy_frames = [
+            MockedAlphaSurface("A"),
+            MockedAlphaSurface("B"),
+            MockedAlphaSurface("C"),
+            MockedAlphaSurface("D"),
+        ]
+        a = LinearAlphaFadeAnimation(dummy_frames, 100)
+
+        self.assertEqual(400, a.get_duration())
+
+        # start animation at 10_000-th millisecond
+        a.start(10_000)
+        self.assertFalse(a.is_over())
+        self.assertEqual("A", cast(MockedAlphaSurface, a.get_image(10_000)).frame)
+        self.assertEqual(255, a.get_image(10_000).get_alpha())
+
+        self.assertEqual("A",
+                         cast(MockedAlphaSurface, a.get_image(10_050)).frame)
+        self.assertGreater(255, a.get_image(10_050).get_alpha())
+        self.assertLess(255 / 4 * 3, a.get_image(10_050).get_alpha())
+
+        self.assertEqual("B",
+                         cast(MockedAlphaSurface, a.get_image(10_100)).frame)
+        self.assertGreater(255, a.get_image(10_100).get_alpha())
+        self.assertLess(255 / 4 * 2, a.get_image(10_100).get_alpha())
+
+        self.assertEqual("D",
+                         cast(MockedAlphaSurface, a.get_image(10_300)).frame)
+        self.assertGreater(255 / 4 * 2, a.get_image(10_300).get_alpha())
+        self.assertLess(0, a.get_image(10_300).get_alpha())
+
+        self.assertEqual(0, a.get_image(10_400).get_alpha())
 
 
 class FallbackAnimatorTest(unittest.TestCase):

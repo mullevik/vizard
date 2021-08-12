@@ -1,8 +1,11 @@
-import random
 import logging
+import random
+
+from src.animation import LinearAlphaFadeAnimation, AnimationManager
+
 log = logging.getLogger(__name__)
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, List
 
 import pygame
 import yaml
@@ -10,17 +13,15 @@ from pygame.event import Event
 from pygame.surface import Surface
 from pygame.time import Clock
 
-from src.action import ActionException
 from src.constants import TICK_SPEED
 from src.environment import Environment, EnvironmentRenderer
 from src.event import EventHandler, AppEventHandler, TextEventHandler
-from src.player import Player, PlayerSprite, HorizontalMoveAction, \
-    VerticalMoveAction, GrassStartJumpAction, GrassEndJumpAction, \
-    PlayerController
+from src.player import Player, PlayerSprite, PlayerController
 from src.replay import Recording
 from src.settings import GameSettings
 from src.shard import ShardSprite, Shard
-from src.utils import Position, CardinalDirection
+from src.utils import Position
+from src.particle import ParticleSprite
 
 
 class SceneException(Exception):
@@ -109,6 +110,9 @@ class GameScene(Scene):
         self.environment = Environment(self.settings,
                                        open("../assets/maps/default.txt",
                                             "r").read())
+
+        self.animation_manager = AnimationManager(self)
+
         self.vertical_shift = 0
         self.environment_renderer = EnvironmentRenderer(self.environment,
                                                         self.settings)
@@ -126,6 +130,8 @@ class GameScene(Scene):
 
         self.shard_group = pygame.sprite.Group([])
 
+        self.particle_group = pygame.sprite.Group([])
+
         self.spawn_shard(Position(3, 1))
 
     def shift_view(self, amount: int) -> int:
@@ -135,6 +141,11 @@ class GameScene(Scene):
         """
         self.vertical_shift += amount
         return self.vertical_shift
+
+    def spawn_particle(self, particle_sprite: ParticleSprite) -> None:
+        """Spawns a given particle. Particles should destroy automatically
+        once their animation is over."""
+        self.particle_group.add(particle_sprite)
 
     def spawn_shard(self, position: Position) -> None:
         """Spawns a shard at a given position.
@@ -182,6 +193,8 @@ class GameScene(Scene):
 
             text_input = self.text_event_handler.get_text_from_this_tick()
 
+            log.debug(text_input)
+
             self.recording.record_text_input(pygame.time.get_ticks(), text_input)
             self.player_controller.handle_input(text_input)
 
@@ -199,10 +212,12 @@ class GameScene(Scene):
 
             self.player_group.update()
             self.shard_group.update()
+            self.particle_group.update()
 
             self.environment_renderer.render(self.screen, self.vertical_shift)
             self.player_group.draw(self.screen)
             self.shard_group.draw(self.screen)
+            self.particle_group.draw(self.screen)
 
             self.handle_collisions()
 
