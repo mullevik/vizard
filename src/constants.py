@@ -1,4 +1,4 @@
-
+VERSION = "Vizard_0.1"
 
 TILE_SIZE_PX = 16
 TICK_SPEED = 64
