@@ -10,7 +10,7 @@ from pygame.surface import Surface
 from pygame.time import Clock
 
 from src.action import ActionException
-from src.constants import FRAME_RATE
+from src.constants import TICK_SPEED
 from src.environment import Environment, EnvironmentRenderer
 from src.player import Player, PlayerSprite, HorizontalMoveAction, \
     VerticalMoveAction, GrassStartJumpAction, GrassEndJumpAction
@@ -88,7 +88,7 @@ class EmptyScene(Scene):
             self.screen.fill("gray")
 
             pygame.display.update()
-            self.clock.tick(FRAME_RATE)
+            self.clock.tick(TICK_SPEED)
 
 
 class GameScene(Scene):
@@ -243,4 +243,4 @@ class GameScene(Scene):
             self.handle_collisions()
 
             pygame.display.update()
-            self.clock.tick(FRAME_RATE)
+            self.clock.tick(TICK_SPEED)
