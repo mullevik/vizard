@@ -3,9 +3,10 @@ import sys
 import pygame
 import yaml
 
-from src.constants import WIDTH_IN_TILES, TILE_SIZE_PX, HEIGHT_IN_TILES
+from src.constants import *
 from src.scene import GameScene, EmptyScene
 from src.settings import GameSettings
+from src.utils import load_scaled_surface
 
 if __name__ == '__main__':
 
@@ -16,6 +17,7 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode((int(WIDTH_IN_TILES * TILE_SIZE_PX * settings.scale_factor),
                                       int(HEIGHT_IN_TILES * TILE_SIZE_PX * settings.scale_factor)))
     pygame.display.set_caption("Vizzard")
+    pygame.display.set_icon(load_scaled_surface(IMG_VIZARD, 1.))
 
     scene_classes = {
         EmptyScene.__name__: EmptyScene,
