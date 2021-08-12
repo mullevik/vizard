@@ -1,5 +1,7 @@
 from abc import abstractmethod
 from typing import Any, TYPE_CHECKING
+import logging
+log = logging.getLogger(__name__)
 
 import pygame
 from pygame.rect import Rect
@@ -49,7 +51,7 @@ class PlayerSprite(pygame.sprite.Sprite):
         super().__init__(*groups)
 
         self.scene = scene
-        self.player = player
+        self.scene.player = player
 
         scale_factor = scene.settings.scale_factor
 
@@ -71,27 +73,29 @@ class PlayerSprite(pygame.sprite.Sprite):
         self._update_rectangle_based_on_current_position()
 
     def _update_rectangle_based_on_current_position(self):
-        x = (self.player.position.x * TILE_SIZE_PX) + (TILE_SIZE_PX // 2)
+        x = (self.scene.player.position.x * TILE_SIZE_PX) + (TILE_SIZE_PX // 2)
         x = x * self.scene.settings.scale_factor
 
-        y = ((self.player.position.y - self.scene.vertical_shift) * TILE_SIZE_PX) \
+        y = ((
+                         self.scene.player.position.y - self.scene.vertical_shift) * TILE_SIZE_PX) \
             + (TILE_SIZE_PX + 1)
         y = y * self.scene.settings.scale_factor
 
         self.rect = self.image.get_rect(midbottom=(x, y))
 
         image = self.animator.get_image(pygame.time.get_ticks())
-        if self.player.direction == CardinalDirection.WEST:
+        if self.scene.player.direction == CardinalDirection.WEST:
             self.image = pygame.transform.flip(image, True, False)
         else:
             self.image = image
 
     def _check_for_vertical_shift(self):
-        current_screen_position = self.player.position.y - self.scene.vertical_shift
+        current_screen_position = self.scene.player.position.y - self.scene.vertical_shift
         if current_screen_position < 1:
             self.scene.shift_view(0 + (current_screen_position - 1))
         elif current_screen_position > HEIGHT_IN_TILES - 2:
-            self.scene.shift_view((current_screen_position + 1) - (HEIGHT_IN_TILES - 1))
+            self.scene.shift_view(
+                (current_screen_position + 1) - (HEIGHT_IN_TILES - 1))
 
 
 class HorizontalMoveAction(AbstractAction):
@@ -159,7 +163,6 @@ class VerticalMoveAction(AbstractAction):
 
 
 class GrassJumpAction(AbstractAction):
-
     environment: Environment
     direction: CardinalDirection
     ignore_stones: bool
@@ -178,14 +181,16 @@ class GrassJumpAction(AbstractAction):
         future_position = self._find_goal_position(current_position)
 
         if (self.environment.contains(future_position)
-                and self.environment.tile_at(future_position).is_walkable()):
+                and self.environment.tile_at(
+                    future_position).is_walkable()):
             player.set_position(future_position)
             player.set_direction(self.direction)
         else:
             raise ActionException(
                 f"Target position is not walkable: {future_position}")
 
-    def _increment_position_with_direction(self, position: Position) -> Position:
+    def _increment_position_with_direction(self,
+                                           position: Position) -> Position:
         x, y = position
         width = self.environment.get_tile_dimensions()[0]
 
@@ -259,8 +264,10 @@ class GrassEndJumpAction(GrassJumpAction):
 
         height = self.environment.get_tile_dimensions()[1] - 1
 
-        previous_position = self._increment_position_with_direction(current_position)
-        next_position = self._increment_position_with_direction(previous_position)
+        previous_position = self._increment_position_with_direction(
+            current_position)
+        next_position = self._increment_position_with_direction(
+            previous_position)
 
         while 0 <= previous_position.y < height:
 
@@ -268,8 +275,10 @@ class GrassEndJumpAction(GrassJumpAction):
             next_tile = self.environment.tile_at(next_position)
 
             if ((previous_tile.is_stone() or previous_tile.is_grass())
-                    and ((not next_tile.is_stone() and not next_tile.is_grass())
-                         or (not self.environment.contains(next_position)))):
+                    and ((
+                                 not next_tile.is_stone() and not next_tile.is_grass())
+                         or (
+                         not self.environment.contains(next_position)))):
                 # previous position was grass/stone and next position is blank
                 # or it is not in the bounds of the map
                 # so return previous position (end of word)
@@ -282,6 +291,63 @@ class GrassEndJumpAction(GrassJumpAction):
                     return previous_position
 
             previous_position = next_position
-            next_position = self._increment_position_with_direction(next_position)
+            next_position = self._increment_position_with_direction(
+                next_position)
 
         return previous_position
+
+
+class PlayerController(object):
+    scene: 'GameScene'
+
+    def __init__(self, scene: 'GameScene'):
+        self.scene = scene
+
+    def handle_input(self, text_input: str):
+
+        for char in text_input:
+            try:
+                if char == "h":
+                    self.scene.player.apply_action(
+                        HorizontalMoveAction(self.scene.environment, -1))
+                    self.scene.player_sprite.animator.start_animation(
+                        "dash", pygame.time.get_ticks())
+                if char == "j":
+                    self.scene.player.apply_action(
+                        VerticalMoveAction(self.scene.environment, 1))
+                if char == "k":
+                    self.scene.player.apply_action(
+                        VerticalMoveAction(self.scene.environment, -1))
+                if char == "l":
+                    self.scene.player.apply_action(
+                        HorizontalMoveAction(self.scene.environment, 1))
+                    self.scene.player_sprite.animator.start_animation(
+                        "dash", pygame.time.get_ticks())
+                if char == "w":
+                    self.scene.player.apply_action(
+                        GrassStartJumpAction(self.scene.environment,
+                                             CardinalDirection.EAST))
+                if char == "e":
+                    self.scene.player.apply_action(
+                        GrassEndJumpAction(self.scene.environment,
+                                           CardinalDirection.EAST))
+
+                if char == "E":
+                    self.scene.player.apply_action(
+                        GrassEndJumpAction(self.scene.environment,
+                                           CardinalDirection.EAST,
+                                           ignore_stones=True))
+
+                if char == "b":
+                    self.scene.player.apply_action(
+                        GrassEndJumpAction(self.scene.environment,
+                                           CardinalDirection.WEST))
+
+                if char == "B":
+                    self.scene.player.apply_action(
+                        GrassEndJumpAction(self.scene.environment,
+                                           CardinalDirection.WEST,
+                                           ignore_stones=True))
+
+            except ActionException as e:
+                log.debug("invalid action")

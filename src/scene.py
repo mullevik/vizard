@@ -1,5 +1,6 @@
 import random
-import sys
+import logging
+log = logging.getLogger(__name__)
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
@@ -12,8 +13,11 @@ from pygame.time import Clock
 from src.action import ActionException
 from src.constants import FRAME_RATE
 from src.environment import Environment, EnvironmentRenderer
+from src.event import EventHandler, AppEventHandler, TextEventHandler
 from src.player import Player, PlayerSprite, HorizontalMoveAction, \
-    VerticalMoveAction, GrassStartJumpAction, GrassEndJumpAction
+    VerticalMoveAction, GrassStartJumpAction, GrassEndJumpAction, \
+    PlayerController
+from src.replay import Recording
 from src.settings import GameSettings
 from src.shard import ShardSprite, Shard
 from src.utils import Position, CardinalDirection
@@ -26,10 +30,12 @@ class SceneException(Exception):
 class Scene(ABC):
     screen: Surface
     clock: Clock
+    event_handlers: List[EventHandler]
 
     def __init__(self, screen: Surface, clock: Clock):
         self.screen = screen
         self.clock = clock
+        self.event_handlers = [AppEventHandler(self)]
 
     def get_name(self) -> str:
         return self.__class__.__name__
@@ -44,22 +50,23 @@ class Scene(ABC):
             return getattr(self, name)
         raise SceneException(f"Scene does not have game object {name}")
 
-    # noinspection PyMethodMayBeStatic
-    def extract_events(self) -> List[Event]:
+    def handle_events(self) -> List[Event]:
         """
-        Handles general purpose events like closing the window.
-        Every scene should override this method with its custom event handling,
-        but it should always call this super().handle_events() first.
+        Delegates event handling to the scene event handlers.
+        :return: list of the extracted events
         """
         events = pygame.event.get()
-        for event in events:
 
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                print("Successful termination")
-                sys.exit(0)
+        for handler in self.event_handlers:
+            handler.handle_events(events)
 
         return events
+
+    def add_event_handler(self, event_handler: EventHandler) -> EventHandler:
+        """Add event handler to the pipeline of scene event handlers.
+        :return: the added handler reference"""
+        self.event_handlers.append(event_handler)
+        return event_handler
 
     @abstractmethod
     def run(self) -> str:
@@ -79,10 +86,10 @@ class EmptyScene(Scene):
         while True:
 
             # handle events
-            for event in self.extract_events():
+            for event in self.handle_events():
 
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_s:
-                    print("Starting game")
+                    log.info("Starting game")
                     return GameScene.__name__
 
             self.screen.fill("gray")
@@ -106,6 +113,12 @@ class GameScene(Scene):
         self.environment_renderer = EnvironmentRenderer(self.environment,
                                                         self.settings)
 
+        self.text_event_handler = TextEventHandler(self)
+        self.add_event_handler(self.text_event_handler)
+        self.player_controller = PlayerController(self)
+
+        self.recording = Recording()
+
         self.player = Player()
         self.player.set_position(self.environment.get_starting_position())
         self.player_sprite = PlayerSprite(self, self.player)
@@ -128,6 +141,7 @@ class GameScene(Scene):
         :param position: where to spawn a shard
         """
         self.shard_group.add(ShardSprite(self, Shard(position)))
+        self.recording.record_shard_spawn(pygame.time.get_ticks(), position)
 
     def spawn_random_shard(self) -> None:
         """Spawns a shard at a random walkable position."""
@@ -147,7 +161,7 @@ class GameScene(Scene):
             collided=self.is_player_colliding_with_shard)
 
         if colliding_sprites:
-            print("COLLISION")
+            log.debug("collision")
             number_of_shards = len(colliding_sprites)
             self.shard_group.remove(colliding_sprites)
             for i in range(number_of_shards):
@@ -160,76 +174,26 @@ class GameScene(Scene):
 
     def run(self) -> bool:
 
-        is_shift_key_active = False
+        self.recording.start(pygame.time.get_ticks())
+        log.info("Started recording")
         while True:
 
-            for event in self.extract_events():
+            events = self.handle_events()
 
+            text_input = self.text_event_handler.get_text_from_this_tick()
+
+            self.recording.record_text_input(pygame.time.get_ticks(), text_input)
+            self.player_controller.handle_input(text_input)
+
+            # additional event handling that will need to be refactored later
+            # TODO: move this somewhere else
+            for event in events:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    print("ESCAPE FROM DEFAULT SCENE")
+                    print("=======RECORDING=STARTS==")
+                    print(self.recording.serialize())
+                    print("=======RECORDING=ENDS====")
+                    log.info("Return from game scene")
                     return None
-
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_LSHIFT:
-                    is_shift_key_active = True
-                if event.type == pygame.KEYUP and event.key == pygame.K_LSHIFT:
-                    is_shift_key_active = False
-
-                try:
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
-                        self.player.apply_action(
-                            HorizontalMoveAction(self.environment, -1))
-                        self.player_sprite.animator.start_animation("dash", pygame.time.get_ticks())
-                        print("MOVE LEFT")
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_j:
-                        self.player.apply_action(
-                            VerticalMoveAction(self.environment, 1))
-                        print("MOVE DOWN")
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_k:
-                        self.player.apply_action(
-                            VerticalMoveAction(self.environment, -1))
-                        print("MOVE UP")
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_l:
-                        self.player.apply_action(
-                            HorizontalMoveAction(self.environment, 1))
-                        self.player_sprite.animator.start_animation("dash", pygame.time.get_ticks())
-                        print("MOVE RIGHT")
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_w:
-                        self.player.apply_action(
-                            GrassStartJumpAction(self.environment,
-                                                 CardinalDirection.EAST))
-                        print("GRASS-START JUMP RIGHT (consider stones")
-                    if (event.type == pygame.KEYDOWN
-                            and event.key == pygame.K_e and not is_shift_key_active):
-                        self.player.apply_action(
-                            GrassEndJumpAction(self.environment,
-                                               CardinalDirection.EAST))
-                        print("GRASS-END JUMP RIGHT (consider stones)")
-
-                    if (event.type == pygame.KEYDOWN
-                            and event.key == pygame.K_e and is_shift_key_active):
-                        self.player.apply_action(
-                            GrassEndJumpAction(self.environment,
-                                               CardinalDirection.EAST,
-                                               ignore_stones=True))
-                        print("GRASS-END JUMP RIGHT (ignore stones)")
-
-                    if (event.type == pygame.KEYDOWN
-                            and event.key == pygame.K_b and not is_shift_key_active):
-                        self.player.apply_action(
-                            GrassEndJumpAction(self.environment,
-                                               CardinalDirection.WEST))
-                        print("GRASS-END JUMP LEFT (consider stones)")
-
-                    if (event.type == pygame.KEYDOWN
-                            and event.key == pygame.K_b and is_shift_key_active):
-                        self.player.apply_action(
-                            GrassEndJumpAction(self.environment,
-                                               CardinalDirection.WEST,
-                                               ignore_stones=True))
-                        print("GRASS-END JUMP LEFT (ignore stones)")
-
-                except ActionException as e:
-                    print(f"INVALID ACTION: {e}")
 
             self.screen.fill("dimgray")
 
