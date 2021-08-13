@@ -5,7 +5,7 @@ from src.animation import LinearAlphaFadeAnimation, AnimationManager
 
 log = logging.getLogger(__name__)
 from abc import ABC, abstractmethod
-from typing import Any, List
+from typing import Any, List, cast
 
 import pygame
 import yaml
@@ -172,9 +172,18 @@ class GameScene(Scene):
             collided=self.is_player_colliding_with_shard)
 
         if colliding_sprites:
-            log.debug("collision")
+            log.debug("collision with shard")
+
+            # spawn shard collected particles
+            for sprite in colliding_sprites:
+                position = cast(ShardSprite, sprite).shard.position
+                self.spawn_particle(ParticleSprite.create_shard_collected(self, position))
+
+            # remove collected sprites
             number_of_shards = len(colliding_sprites)
             self.shard_group.remove(colliding_sprites)
+
+            # spawn new random shards
             for i in range(number_of_shards):
                 self.spawn_random_shard()
 

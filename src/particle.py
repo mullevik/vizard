@@ -62,6 +62,50 @@ class ParticleSprite(pygame.sprite.Sprite):
         if self.animation.is_over():
             self.kill()
 
+    @staticmethod
+    def create_dash_left(scene: 'GameScene', position: Position) -> 'ParticleSprite':
+        return ParticleSprite(
+            scene,
+            scene.animation_manager.get_animation("particle-dash-left"),
+            position,
+            px_offset=Position(-TILE_SIZE_PX // 2, 1)
+        )
+
+    @staticmethod
+    def create_dash_right(scene: 'GameScene', position: Position) -> 'ParticleSprite':
+        return ParticleSprite(
+            scene,
+            scene.animation_manager.get_animation("particle-dash-right"),
+            position,
+            px_offset=Position(TILE_SIZE_PX // 2, 1)
+        )
+
+    @staticmethod
+    def create_blink_in(scene: 'GameScene', position: Position) -> 'ParticleSprite':
+        return ParticleSprite(
+            scene,
+            scene.animation_manager.get_animation("particle-blink-in"),
+            position,
+            px_offset=Position(0, 0)
+        )
+
+    @staticmethod
+    def create_blink_out(scene: 'GameScene', position: Position) -> 'ParticleSprite':
+        return ParticleSprite(
+            scene,
+            scene.animation_manager.get_animation("particle-blink-out"),
+            position,
+            px_offset=Position(0, 0)
+        )
+
+    @staticmethod
+    def create_shard_collected(scene: 'GameScene', position: Position) -> 'ParticleSprite':
+        return ParticleSprite(
+            scene,
+            scene.animation_manager.get_animation("particle-shard-collected"),
+            position,
+            px_offset=Position(0, -TILE_SIZE_PX)
+        )
 
 
 

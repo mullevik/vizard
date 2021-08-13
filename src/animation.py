@@ -1,11 +1,9 @@
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import List, Dict, TYPE_CHECKING
 
 import pygame
 from pygame.surface import Surface
 
-from src.constants import ANIM_VIZARD_DASH, ANIM_VIZARD_IDLE
+from src.constants import *
 from src.utils import Milliseconds, load_scaled_surfaces
 
 if TYPE_CHECKING:
@@ -134,8 +132,9 @@ class FallbackAnimator(object):
                 n_looping_animations += 1
 
         if n_looping_animations != 1:
-            raise AnimationException(f"Wrong number of looping animations provided, "
-                                     f"expected 1, got {n_looping_animations}")
+            raise AnimationException(
+                f"Wrong number of looping animations provided, "
+                f"expected 1, got {n_looping_animations}")
 
         self.current_animation = animations[self.fallback_animation_name]
 
@@ -157,7 +156,8 @@ class FallbackAnimator(object):
         """Get the corresponding frame of current animation.
         :return: the surface of the animation frame"""
 
-        current_animation_frame = self.current_animation.get_image(current_time)
+        current_animation_frame = self.current_animation.get_image(
+            current_time)
 
         if not self.current_animation.is_over():
             # current animation frame is from the correct animation
@@ -172,32 +172,58 @@ class FallbackAnimator(object):
                 raise AnimationException("Unexpected animator timing")
 
             # switch to fallback animation
-            self.current_animation = self.animations[self.fallback_animation_name]
+            self.current_animation = self.animations[
+                self.fallback_animation_name]
             self.current_animation.start(end)
             return self.current_animation.get_image(current_time)
 
 
 class AnimationManager(object):
-
     animations: Dict[str, Animation]
 
     def __init__(self, scene: 'GameScene'):
         scale_factor = scene.settings.scale_factor
 
-        idle_frames = load_scaled_surfaces(ANIM_VIZARD_IDLE, scale_factor)
-        dash_frames = load_scaled_surfaces(ANIM_VIZARD_DASH, scale_factor)
-        dash_image = dash_frames[0]
+        dash_image = load_scaled_surfaces(ANIM_VIZARD_DASH, scale_factor)[0]
 
         self.animations = {
-            "idle": Animation(idle_frames, 600, loop=True),
-            "dash": Animation(dash_frames, 100),
-            "dash-right-particle":
+            # character movement
+            "idle": Animation(
+                load_scaled_surfaces(ANIM_VIZARD_IDLE, scale_factor),
+                600, loop=True),
+            "dash": Animation(
+                load_scaled_surfaces(ANIM_VIZARD_DASH, scale_factor),
+                100),
+            "ascent": Animation(
+                load_scaled_surfaces(ANIM_VIZARD_ASCENT, scale_factor),
+                100
+            ),
+            "descent": Animation(
+                load_scaled_surfaces(ANIM_VIZARD_DESCENT, scale_factor),
+                100
+            ),
+            "blink-in": Animation(
+                load_scaled_surfaces(ANIM_VIZARD_BLINK_IN, scale_factor),
+                100
+            ),
+            "particle-dash-right":
                 LinearAlphaFadeAnimation([dash_image.copy()], 300),
-            "dash-left-particle": LinearAlphaFadeAnimation(
+            "particle-dash-left": LinearAlphaFadeAnimation(
                 [pygame.transform.flip(dash_image, True, False)], 300),
+            "particle-blink-in": Animation(
+                load_scaled_surfaces(ANIM_PARTICLE_BLINK_IN, scale_factor),
+                100
+            ),
+            "particle-blink-out": Animation(
+                load_scaled_surfaces(ANIM_PARTICLE_BLINK_OUT, scale_factor),
+                100
+            ),
+            "particle-shard-collected": Animation(
+                load_scaled_surfaces(ANIM_PARTICLE_SHARD_COLLECTED,
+                                     scale_factor),
+                70
+            )
         }
 
     def get_animation(self, name: str) -> Animation:
         return self.animations[name].copy()
-
-

@@ -317,14 +317,8 @@ class PlayerController(object):
                         HorizontalMoveAction(self.scene.environment, -1))
                     self.scene.player_sprite.animator.start_animation(
                         "dash", pygame.time.get_ticks())
-
                     self.scene.spawn_particle(
-                        ParticleSprite(self.scene,
-                                       self.scene.animation_manager.get_animation(
-                                           "dash-left-particle"),
-                                       last_position,
-                                       px_offset=Position(-TILE_SIZE_PX // 2,
-                                                          1)))
+                        ParticleSprite.create_dash_left(self.scene, last_position))
 
                 if char == "j":
                     self.scene.player.apply_action(
@@ -339,12 +333,7 @@ class PlayerController(object):
                     self.scene.player_sprite.animator.start_animation(
                         "dash", pygame.time.get_ticks())
                     self.scene.spawn_particle(
-                        ParticleSprite(self.scene,
-                                       self.scene.animation_manager.get_animation(
-                                           "dash-right-particle"),
-                                       last_position,
-                                       px_offset=Position(TILE_SIZE_PX // 2,
-                                                          1)))
+                        ParticleSprite.create_dash_right(self.scene, last_position))
 
                 if char == "w":
                     self.scene.player.apply_action(
