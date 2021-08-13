@@ -185,6 +185,8 @@ class AnimationManager(object):
         scale_factor = scene.settings.scale_factor
 
         dash_image = load_scaled_surfaces(ANIM_VIZARD_DASH, scale_factor)[0]
+        ascent_image = load_scaled_surfaces(ANIM_VIZARD_ASCENT, scale_factor)[0]
+        descent_image = load_scaled_surfaces(ANIM_VIZARD_DESCENT, scale_factor)[0]
 
         self.animations = {
             # character movement
@@ -207,16 +209,24 @@ class AnimationManager(object):
                 100
             ),
             "particle-dash-right":
-                LinearAlphaFadeAnimation([dash_image.copy()], 300),
+                LinearAlphaFadeAnimation([dash_image.copy()], 150),
             "particle-dash-left": LinearAlphaFadeAnimation(
-                [pygame.transform.flip(dash_image, True, False)], 300),
+                [pygame.transform.flip(dash_image, True, False)], 150),
+            "particle-ascent-right":
+                LinearAlphaFadeAnimation([ascent_image.copy()], 150),
+            "particle-ascent-left": LinearAlphaFadeAnimation(
+                [pygame.transform.flip(ascent_image, True, False)], 150),
+            "particle-descent-right":
+                LinearAlphaFadeAnimation([descent_image.copy()], 150),
+            "particle-descent-left": LinearAlphaFadeAnimation(
+                [pygame.transform.flip(descent_image, True, False)], 150),
             "particle-blink-in": Animation(
                 load_scaled_surfaces(ANIM_PARTICLE_BLINK_IN, scale_factor),
-                100
+                70
             ),
             "particle-blink-out": Animation(
                 load_scaled_surfaces(ANIM_PARTICLE_BLINK_OUT, scale_factor),
-                100
+                70
             ),
             "particle-shard-collected": Animation(
                 load_scaled_surfaces(ANIM_PARTICLE_SHARD_COLLECTED,

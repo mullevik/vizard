@@ -58,14 +58,15 @@ class PlayerSprite(pygame.sprite.Sprite):
 
         scale_factor = scene.settings.scale_factor
 
-        idle_animation = self.scene.animation_manager.get_animation("idle")
-        dash_animation = self.scene.animation_manager.get_animation("dash")
-        self.image = idle_animation.frames[0]
         self.animator = FallbackAnimator({
-            "idle": idle_animation,
-            "dash": dash_animation
+            "idle": self.scene.animation_manager.get_animation("idle"),
+            "dash": self.scene.animation_manager.get_animation("dash"),
+            "ascent": self.scene.animation_manager.get_animation("ascent"),
+            "descent": self.scene.animation_manager.get_animation("descent"),
+            "blink-in": self.scene.animation_manager.get_animation("blink-in"),
         })
         self.animator.start(pygame.time.get_ticks())
+        self.image = self.animator.get_image(pygame.time.get_ticks())
 
         center_of_first_tile = ((TILE_SIZE_PX // 2) * scale_factor,
                                 (TILE_SIZE_PX + 1) * scale_factor)
@@ -311,55 +312,88 @@ class PlayerController(object):
 
         for char in text_input:
             try:
+                previous_position = self.scene.player.get_position()
+
+                def spawn_blink_particles(scene: 'GameScene'):
+                    scene.player_sprite.animator.start_animation(
+                        "blink-in", pygame.time.get_ticks())
+                    scene.spawn_particle(
+                        ParticleSprite.create_blink_in(scene, scene.player.position))
+                    scene.spawn_particle(
+                        ParticleSprite.create_blink_out(scene, previous_position)
+                    )
+
                 if char == "h":
-                    last_position = self.scene.player.get_position()
                     self.scene.player.apply_action(
                         HorizontalMoveAction(self.scene.environment, -1))
                     self.scene.player_sprite.animator.start_animation(
                         "dash", pygame.time.get_ticks())
                     self.scene.spawn_particle(
-                        ParticleSprite.create_dash_left(self.scene, last_position))
+                        ParticleSprite.create_dash_left(self.scene, previous_position))
 
                 if char == "j":
                     self.scene.player.apply_action(
                         VerticalMoveAction(self.scene.environment, 1))
+                    self.scene.player_sprite.animator.start_animation(
+                        "descent", pygame.time.get_ticks())
+                    self.scene.spawn_particle(
+                        ParticleSprite.create_descent(self.scene,
+                                                      self.scene.player.position,
+                                                      self.scene.player.direction))
                 if char == "k":
                     self.scene.player.apply_action(
                         VerticalMoveAction(self.scene.environment, -1))
+                    self.scene.player_sprite.animator.start_animation(
+                        "ascent", pygame.time.get_ticks())
+                    self.scene.spawn_particle(
+                        ParticleSprite.create_ascent(self.scene,
+                                                     self.scene.player.position,
+                                                     self.scene.player.direction))
                 if char == "l":
-                    last_position = self.scene.player.get_position()
                     self.scene.player.apply_action(
                         HorizontalMoveAction(self.scene.environment, 1))
                     self.scene.player_sprite.animator.start_animation(
                         "dash", pygame.time.get_ticks())
                     self.scene.spawn_particle(
-                        ParticleSprite.create_dash_right(self.scene, last_position))
+                        ParticleSprite.create_dash_right(self.scene, previous_position))
 
                 if char == "w":
                     self.scene.player.apply_action(
                         GrassStartJumpAction(self.scene.environment,
                                              CardinalDirection.EAST))
+                    spawn_blink_particles(self.scene)
+                if char == "W":
+                    self.scene.player.apply_action(
+                        GrassStartJumpAction(self.scene.environment,
+                                             CardinalDirection.EAST,
+                                             ignore_stones=True))
+                    spawn_blink_particles(self.scene)
+
                 if char == "e":
                     self.scene.player.apply_action(
                         GrassEndJumpAction(self.scene.environment,
                                            CardinalDirection.EAST))
+                    spawn_blink_particles(self.scene)
 
                 if char == "E":
                     self.scene.player.apply_action(
                         GrassEndJumpAction(self.scene.environment,
                                            CardinalDirection.EAST,
                                            ignore_stones=True))
+                    spawn_blink_particles(self.scene)
 
                 if char == "b":
                     self.scene.player.apply_action(
                         GrassEndJumpAction(self.scene.environment,
                                            CardinalDirection.WEST))
+                    spawn_blink_particles(self.scene)
 
                 if char == "B":
                     self.scene.player.apply_action(
                         GrassEndJumpAction(self.scene.environment,
                                            CardinalDirection.WEST,
                                            ignore_stones=True))
+                    spawn_blink_particles(self.scene)
 
             except ActionException as e:
                 log.debug("invalid action")

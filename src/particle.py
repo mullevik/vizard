@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Dict
 import logging
+
 log = logging.getLogger(__name__)
 
 import pygame
@@ -9,14 +10,13 @@ from pygame.surface import Surface
 
 from src.animation import Animation, LinearAlphaFadeAnimation
 from src.constants import TILE_SIZE_PX, ANIM_VIZARD_DASH
-from src.utils import Point, load_scaled_surfaces, Position
+from src.utils import Point, load_scaled_surfaces, Position, CardinalDirection
 
 if TYPE_CHECKING:
     from src.scene import GameScene
 
 
 class ParticleSprite(pygame.sprite.Sprite):
-
     scene: 'GameScene'
     image: Surface
     rect: Rect
@@ -49,11 +49,12 @@ class ParticleSprite(pygame.sprite.Sprite):
 
     def _update_rectangle_based_on_vertical_shift(self):
         scale_factor = self.scene.settings.scale_factor
-        x = (self.position.x * TILE_SIZE_PX) + (TILE_SIZE_PX // 2) + self.px_offset.x
+        x = (self.position.x * TILE_SIZE_PX) + (
+                TILE_SIZE_PX // 2) + self.px_offset.x
         x = x * scale_factor
 
         y = ((self.position.y - self.scene.vertical_shift) * TILE_SIZE_PX) + (
-                    TILE_SIZE_PX // 2) + self.px_offset.y
+                TILE_SIZE_PX // 2) + self.px_offset.y
         y = y * scale_factor
 
         self.rect.center = (x, y)
@@ -63,7 +64,8 @@ class ParticleSprite(pygame.sprite.Sprite):
             self.kill()
 
     @staticmethod
-    def create_dash_left(scene: 'GameScene', position: Position) -> 'ParticleSprite':
+    def create_dash_left(scene: 'GameScene',
+                         position: Position) -> 'ParticleSprite':
         return ParticleSprite(
             scene,
             scene.animation_manager.get_animation("particle-dash-left"),
@@ -72,7 +74,8 @@ class ParticleSprite(pygame.sprite.Sprite):
         )
 
     @staticmethod
-    def create_dash_right(scene: 'GameScene', position: Position) -> 'ParticleSprite':
+    def create_dash_right(scene: 'GameScene',
+                          position: Position) -> 'ParticleSprite':
         return ParticleSprite(
             scene,
             scene.animation_manager.get_animation("particle-dash-right"),
@@ -81,16 +84,45 @@ class ParticleSprite(pygame.sprite.Sprite):
         )
 
     @staticmethod
-    def create_blink_in(scene: 'GameScene', position: Position) -> 'ParticleSprite':
+    def create_ascent(scene: 'GameScene', position: Position,
+                      direction: CardinalDirection):
+        animation_name = "particle-ascent-left" \
+            if direction == CardinalDirection.WEST else "particle-ascent-right"
+
+        return ParticleSprite(
+            scene,
+            scene.animation_manager.get_animation(animation_name),
+            position,
+            px_offset=Position(0, TILE_SIZE_PX // 2)
+        )
+
+    @staticmethod
+    def create_descent(scene: 'GameScene', position: Position,
+                       direction: CardinalDirection):
+        animation_name = "particle-descent-left" \
+            if direction == CardinalDirection.WEST else "particle-descent-right"
+
+        return ParticleSprite(
+            scene,
+            scene.animation_manager.get_animation(animation_name),
+            position,
+            px_offset=Position(0, -TILE_SIZE_PX // 2)
+        )
+
+    @staticmethod
+    def create_blink_in(scene: 'GameScene',
+                        position: Position) -> 'ParticleSprite':
         return ParticleSprite(
             scene,
             scene.animation_manager.get_animation("particle-blink-in"),
             position,
-            px_offset=Position(0, 0)
+            px_offset=Position(0, -TILE_SIZE_PX // 4)
         )
 
+
     @staticmethod
-    def create_blink_out(scene: 'GameScene', position: Position) -> 'ParticleSprite':
+    def create_blink_out(scene: 'GameScene',
+                         position: Position) -> 'ParticleSprite':
         return ParticleSprite(
             scene,
             scene.animation_manager.get_animation("particle-blink-out"),
@@ -98,18 +130,13 @@ class ParticleSprite(pygame.sprite.Sprite):
             px_offset=Position(0, 0)
         )
 
+
     @staticmethod
-    def create_shard_collected(scene: 'GameScene', position: Position) -> 'ParticleSprite':
+    def create_shard_collected(scene: 'GameScene',
+                               position: Position) -> 'ParticleSprite':
         return ParticleSprite(
             scene,
             scene.animation_manager.get_animation("particle-shard-collected"),
             position,
             px_offset=Position(0, -TILE_SIZE_PX)
         )
-
-
-
-
-
-
-

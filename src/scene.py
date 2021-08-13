@@ -202,8 +202,6 @@ class GameScene(Scene):
 
             text_input = self.text_event_handler.get_text_from_this_tick()
 
-            log.debug(text_input)
-
             self.recording.record_text_input(pygame.time.get_ticks(), text_input)
             self.player_controller.handle_input(text_input)
 
