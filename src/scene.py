@@ -1,12 +1,14 @@
 import logging
 import random
+from dataclasses import dataclass
 
 from src.animation import AnimationManager
 from src.control import PlayerController
+from src.ui.game_hud import GameHudFactory
 
 log = logging.getLogger(__name__)
 from abc import ABC, abstractmethod
-from typing import Any, List, cast
+from typing import Any, List, cast, Optional
 
 import pygame
 import yaml
@@ -21,7 +23,7 @@ from src.player import Player, PlayerSprite
 from src.replay import Recording
 from src.settings import GameSettings
 from src.shard import ShardSprite, Shard
-from src.utils import Position
+from src.utils import Position, Milliseconds
 from src.particle import ParticleSprite
 
 
@@ -31,13 +33,17 @@ class SceneException(Exception):
 
 class Scene(ABC):
     screen: Surface
+    settings: GameSettings
     clock: Clock
     event_handlers: List[EventHandler]
 
     def __init__(self, screen: Surface, clock: Clock):
+        self.settings = GameSettings(
+            **yaml.load(open("../config.yaml"), Loader=yaml.FullLoader))
         self.screen = screen
         self.clock = clock
         self.event_handlers = [AppEventHandler(self)]
+        self.data = GameData()
 
     def get_name(self) -> str:
         return self.__class__.__name__
@@ -100,14 +106,18 @@ class EmptyScene(Scene):
             self.clock.tick(TICK_SPEED)
 
 
+@dataclass
+class GameData:
+
+    start_time: Optional[Milliseconds] = None
+    end_time: Optional[Milliseconds] = None
+    collected_shards: int = 0
+
+
 class GameScene(Scene):
 
     def __init__(self, screen: Surface, clock: Clock):
         super().__init__(screen, clock)
-
-        self.settings = GameSettings(
-            **yaml.load(open("../config.yaml"), Loader=yaml.FullLoader))
-
         self.environment = Environment(self.settings,
                                        open("../assets/maps/default.txt",
                                             "r").read())
@@ -132,6 +142,8 @@ class GameScene(Scene):
         self.shard_group = pygame.sprite.Group([])
 
         self.particle_group = pygame.sprite.Group([])
+
+        self.hud_ui_group = GameHudFactory.build_group(self)
 
         self.spawn_shard(Position(3, 1))
 
@@ -184,6 +196,9 @@ class GameScene(Scene):
             number_of_shards = len(colliding_sprites)
             self.shard_group.remove(colliding_sprites)
 
+            # add shards to score
+            self.data.collected_shards += number_of_shards
+
             # spawn new random shards
             for i in range(number_of_shards):
                 self.spawn_random_shard()
@@ -221,11 +236,14 @@ class GameScene(Scene):
             self.player_group.update()
             self.shard_group.update()
             self.particle_group.update()
+            self.hud_ui_group.update()
 
             self.environment_renderer.render(self.screen, self.vertical_shift)
             self.player_group.draw(self.screen)
             self.shard_group.draw(self.screen)
             self.particle_group.draw(self.screen)
+
+            self.hud_ui_group.draw(self.screen)
 
             self.handle_collisions()
 

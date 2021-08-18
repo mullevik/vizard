@@ -1,3 +1,5 @@
+import pygame
+
 VERSION = "Vizard_0.1"
 
 TILE_SIZE_PX = 16
@@ -32,3 +34,6 @@ IMG_TILE_STONE_LIST = [
                         "../assets/graphics/environment/tile_stone_02.png",
 ]
 
+
+# fonts
+PIXEL_FONT_SMALL = pygame.font.Font('../assets/fonts/joystix.monospace.ttf', 20)

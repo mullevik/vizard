@@ -31,7 +31,7 @@ class ShardSprite(pygame.sprite.Sprite):
 
     animation: Animation
 
-    def __init__(self, scene: 'GameScene', shard: Shard, *groups: AbstractGroup, ):
+    def __init__(self, scene: 'GameScene', shard: Shard, *groups: AbstractGroup):
         super().__init__(*groups)
         self.scene = scene
         self.shard = shard

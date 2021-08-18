@@ -93,21 +93,21 @@ class Recording(object):
 
     def start(self, current_time: Milliseconds):
         self.start_time = current_time
-        self.data = [VersionInfo(self._get_recording_time(current_time))]
+        self.data = [VersionInfo(self.get_recording_time(current_time))]
 
     def record_text_input(self, current_time: Milliseconds, text_input: str) -> 'Recording':
         if text_input:
-            self._store_event(TextInput(self._get_recording_time(current_time),
+            self._store_event(TextInput(self.get_recording_time(current_time),
                                         text_input))
         return self
 
     def record_shard_spawn(self, current_time: Milliseconds,
                            spawn_position: Position) -> 'Recording':
-        self._store_event(ShardSpawn(self._get_recording_time(current_time),
+        self._store_event(ShardSpawn(self.get_recording_time(current_time),
                                      spawn_position))
         return self
 
-    def _get_recording_time(self, current_time: Milliseconds) -> Milliseconds:
+    def get_recording_time(self, current_time: Milliseconds) -> Milliseconds:
         return current_time - self.start_time
 
     def _store_event(self, event: RecordedEvent) -> 'Recording':
