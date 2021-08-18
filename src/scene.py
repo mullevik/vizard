@@ -145,7 +145,7 @@ class GameScene(Scene):
 
         self.hud_ui_group = GameHudFactory.build_group(self)
 
-        self.spawn_shard(Position(3, 1))
+        self.spawn_random_shard()
 
     def shift_view(self, amount: int) -> int:
         """Shift the view of the world by +amount

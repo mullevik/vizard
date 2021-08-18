@@ -96,11 +96,11 @@ class PlayerSprite(pygame.sprite.Sprite):
 
     def _check_for_vertical_shift(self):
         current_screen_position = self.scene.player.position.y - self.scene.vertical_shift
-        if current_screen_position < 1:
-            self.scene.shift_view(0 + (current_screen_position - 1))
-        elif current_screen_position > HEIGHT_IN_TILES - 2:
+        if current_screen_position < 2:
+            self.scene.shift_view(0 + (current_screen_position - 2))
+        elif current_screen_position > HEIGHT_IN_TILES - 3:
             self.scene.shift_view(
-                (current_screen_position + 1) - (HEIGHT_IN_TILES - 1))
+                (current_screen_position + 2) - (HEIGHT_IN_TILES - 1))
 
 
 

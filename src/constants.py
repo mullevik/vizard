@@ -25,6 +25,12 @@ ANIM_PARTICLE_BLINK_OUT = "../assets/graphics/particles/animation/blink-out/"
 ANIM_PARTICLE_SHARD_COLLECTED = "../assets/graphics/particles/animation/shard-collected/"
 
 IMG_TILE_DIRT =         "../assets/graphics/environment/tile_dirt.png"
+IMG_TILE_DIRT_SIDES =   "../assets/graphics/environment/tile_dirt_sides.png"
+IMG_TILE_DIRT_LEFT_TOP = "../assets/graphics/environment/tile_dirt_left_top.png"
+IMG_TILE_DIRT_SIDES_TOP = "../assets/graphics/environment/tile_dirt_sides_top.png"
+IMG_TILE_DIRT_LEFT_SIDE = "../assets/graphics/environment/tile_dirt_left_side.png"
+IMG_TILE_DIRT_LEFT_SOLO = "../assets/graphics/environment/tile_dirt_left_solo.png"
+
 IMG_TILE_GRASS_LIST = [
                         "../assets/graphics/environment/tile_grass_01.png",
                         "../assets/graphics/environment/tile_grass_02.png",
@@ -34,6 +40,3 @@ IMG_TILE_STONE_LIST = [
                         "../assets/graphics/environment/tile_stone_02.png",
 ]
 
-
-# fonts
-PIXEL_FONT_SMALL = pygame.font.Font('../assets/fonts/joystix.monospace.ttf', 20)

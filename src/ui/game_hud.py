@@ -1,11 +1,12 @@
 import typing
 
 import pygame
+from pygame.font import Font
 from pygame.rect import Rect
 from pygame.sprite import Sprite, AbstractGroup, Group
 from pygame.surface import Surface
 
-from src.animation import PIXEL_FONT_SMALL, \
+from src.animation import \
     WIDTH_IN_TILES, TILE_SIZE_PX, HEIGHT_IN_TILES, ANIM_SHARD_IDLE
 from src.utils import load_scaled_surfaces
 
@@ -49,6 +50,7 @@ class ShardIconUI(Sprite):
 
 class ShardCountUI(Sprite):
     scene: 'GameScene'
+    font: Font
     color = (93, 255, 238)
     image: Surface
     rect: Rect
@@ -59,19 +61,21 @@ class ShardCountUI(Sprite):
         self.scene = scene
         scale_factor = self.scene.settings.scale_factor
 
-        self.image = PIXEL_FONT_SMALL.render("nan", False, self.color)
+        self.font = pygame.font.Font('../assets/fonts/joystix.monospace.ttf', 20)
+
+        self.image = self.font.render("nan", False, self.color)
         self.rect = self.image.get_rect(
             bottomleft=((WIDTH_IN_TILES - 3) * TILE_SIZE_PX * scale_factor,
                         HEIGHT_IN_TILES * TILE_SIZE_PX * scale_factor))
 
     def update(self, *args, **kwargs) -> None:
-        self.image = PIXEL_FONT_SMALL.render(
+        self.image =  self.font.render(
             f"{self.scene.data.collected_shards}", False, self.color)
 
 
 class ClockUI(Sprite):
     scene: 'GameScene'
-
+    font: Font
     image: Surface
     rect: Rect
 
@@ -79,8 +83,10 @@ class ClockUI(Sprite):
         super().__init__(*groups)
 
         self.scene = scene
+        self.font = pygame.font.Font('../assets/fonts/joystix.monospace.ttf',
+                                     20)
 
-        self.image = PIXEL_FONT_SMALL.render("nan", False, (255, 255, 255))
+        self.image = self.font.render("nan", False, (255, 255, 255))
         self._update_position_of_timer_text()
 
     def _update_position_of_timer_text(self):
@@ -99,7 +105,7 @@ class ClockUI(Sprite):
         second_string = f"{seconds % 60:02d}." if minutes > 0 else f"{seconds % 60}."
         ms_string = f"{(ms_since_start % 1000) // 100}"
 
-        self.image = PIXEL_FONT_SMALL.render(
+        self.image = self.font.render(
             f"{minute_string + second_string + ms_string}", False,
             (255, 255, 255))
 

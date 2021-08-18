@@ -1,12 +1,10 @@
 import random
 from dataclasses import dataclass
-from typing import List, TYPE_CHECKING, Tuple
+from typing import List, TYPE_CHECKING, Tuple, Dict, Any
 
 from pygame import Surface
 
-from src.constants import IMG_TILE_DIRT, IMG_TILE_GRASS_LIST, \
-    IMG_TILE_STONE_LIST, \
-    TILE_SIZE_PX
+from src.constants import *
 from src.settings import GameSettings
 from src.utils import Position, load_scaled_surface
 
@@ -166,24 +164,38 @@ class EnvironmentRenderer(AbstractRenderer):
 
                 coordinates = (
                     int(x * TILE_SIZE_PX * self.settings.scale_factor),
-                    int((y - vertical_shift) * TILE_SIZE_PX * self.settings.scale_factor))
+                    int((
+                                y - vertical_shift) * TILE_SIZE_PX * self.settings.scale_factor))
 
                 for surface in surfaces:
                     screen.blit(surface, coordinates)
 
     def _prepare_surfaces_for_tiles(self) -> List[List[List[Surface]]]:
-        surfaces = [[self._prepare_surfaces_for_tile(t) for t in row]
-                    for row in self.environment.get_tile_matrix()]
+        tile_matrix = self.environment.get_tile_matrix()
+        surfaces = [[None for _ in row]
+                    for row in tile_matrix]
+
+        for y in range(len(tile_matrix)):
+            for x in range(len(tile_matrix[y])):
+                surfaces[y][x] = \
+                    self._prepare_surfaces_for_tile(Position(x, y),
+                                                    tile_matrix)
+
         return surfaces
 
-    def _prepare_surfaces_for_tile(self, tile: Tile):
+    def _prepare_surfaces_for_tile(self, position: Position,
+                                   tile_matrix: List[List[Tile]]) -> List[
+        Surface]:
         surfaces = []
+        tile = tile_matrix[position.y][position.x]
+        dirt_map = self._construct_dirt_map(tile_matrix)
         scale_factor = self.settings.scale_factor
 
         if tile.is_dirt():
-            surfaces.append(
-                load_scaled_surface(IMG_TILE_DIRT, scale_factor,
-                                    has_alpha=False))
+            surfaces.append(self._prepare_dirt_surface(position, dirt_map))
+
+            # load_scaled_surface(IMG_TILE_DIRT, scale_factor,
+            #                     has_alpha=False))
         if tile.is_grass():
             surfaces.append(
                 load_scaled_surface(random.choice(IMG_TILE_GRASS_LIST),
@@ -193,3 +205,145 @@ class EnvironmentRenderer(AbstractRenderer):
                 load_scaled_surface(random.choice(IMG_TILE_STONE_LIST),
                                     scale_factor))
         return surfaces
+
+    def _prepare_dirt_surface(self, position: Position,
+                              dirt_map: List[List[bool]]) -> Surface:
+        scale_factor = self.settings.scale_factor
+
+        # mask explanation:
+        # 0 - must not be dirt,
+        # 1 - must be dirt,
+        # 2 - doesnt matter
+        tile_options = [
+            {
+                "mask": [
+                    [2, 2, 2],
+                    [1, 1, 1],
+                    [0, 0, 0],
+                ],
+                "image": load_scaled_surface(IMG_TILE_DIRT_SIDES, scale_factor)
+            },
+            {
+                "mask": [
+                    [2, 2, 2],
+                    [1, 1, 1],
+                    [1, 0, 1],
+                ],
+                "image": load_scaled_surface(IMG_TILE_DIRT_SIDES_TOP, scale_factor)
+            },
+            {
+                "mask": [
+                    [2, 2, 2],
+                    [1, 1, 0],
+                    [1, 0, 2],
+                ],
+                "image": load_scaled_surface(IMG_TILE_DIRT_LEFT_TOP,
+                                             scale_factor)
+            },
+            {
+                "mask": [
+                    [2, 2, 2],
+                    [0, 1, 1],
+                    [2, 0, 1],
+                ],
+                "image": pygame.transform.flip(load_scaled_surface(IMG_TILE_DIRT_LEFT_TOP,
+                                             scale_factor), True, False)
+            },
+            {
+                "mask": [
+                    [2, 2, 2],
+                    [1, 1, 1],
+                    [1, 0, 0],
+                ],
+                "image": load_scaled_surface(IMG_TILE_DIRT_LEFT_SIDE,
+                                             scale_factor)
+            },
+            {
+                "mask": [
+                    [2, 2, 2],
+                    [1, 1, 1],
+                    [0, 0, 1],
+                ],
+                "image": pygame.transform.flip(
+                    load_scaled_surface(IMG_TILE_DIRT_LEFT_SIDE,
+                                        scale_factor), True, False)
+            },
+            {
+                "mask": [
+                    [2, 2, 2],
+                    [1, 1, 0],
+                    [0, 0, 0],
+                ],
+                "image": load_scaled_surface(IMG_TILE_DIRT_LEFT_SOLO,
+                                             scale_factor)
+            },
+            {
+                "mask": [
+                    [2, 2, 2],
+                    [0, 1, 1],
+                    [0, 0, 0],
+                ],
+                "image": pygame.transform.flip(
+                    load_scaled_surface(IMG_TILE_DIRT_LEFT_SOLO,
+                                        scale_factor), True, False)
+            },
+            {
+                "mask": [
+                    [2, 2, 2],
+                    [2, 2, 2],
+                    [2, 2, 2],
+                ],
+                "image": load_scaled_surface(IMG_TILE_DIRT, scale_factor,
+                                             has_alpha=False)
+            }
+        ]
+
+        for tile_option in tile_options:
+            if self._does_tile_fit(position, tile_option["mask"], dirt_map):
+                return tile_option["image"]
+        raise EnvironmentException("Smooth tiling ended unexpectedly")
+
+    @staticmethod
+    def _does_tile_fit(position: Position,
+                       tile_mask: List[List[int]],
+                       dirt_map: List[List[bool]]) -> bool:
+        """
+        :returns True if the tile option fits into the dirt_map, False otherwise.
+        """
+        x_lb = position.x
+        x_ub = position.x + 3
+        y_lb = position.y
+        y_ub = position.y + 3
+
+        for y, dirt_y in zip((0, 1, 2), range(y_lb, y_ub)):
+            for x, dirt_x in zip((0, 1, 2), range(x_lb, x_ub)):
+                is_dirt = dirt_map[dirt_y][dirt_x]
+                mask_number = tile_mask[y][x]
+                if mask_number == 0 and is_dirt:
+                    return False
+                if mask_number == 1 and not is_dirt:
+                    return False
+
+        return True
+
+    def _construct_dirt_map(self, tile_matrix: List[List[Tile]]
+                            ) -> List[List[bool]]:
+        """
+        :returns a matrix of size h + 2 x w + 2 that contains booleans -
+        True position means there is a dirt
+        False position means there is not dirt
+        """
+        w, h = self.environment.get_tile_dimensions()
+
+        dirt_map = [[False for _ in range(len(tile_matrix[0]) + 2)]
+                    for _ in range(len(tile_matrix) + 2)]
+
+        # for x in range(w):
+        #     dirt_map[h + 1][x] = True
+
+        for y in range(h):
+            for x in range(w):
+                if tile_matrix[y][x].is_dirt():
+                    dirt_map[y + 1][x + 1] = True
+
+        return dirt_map
