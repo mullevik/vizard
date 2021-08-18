@@ -2,6 +2,7 @@ from abc import abstractmethod
 from typing import Any, TYPE_CHECKING
 import logging
 
+from src.event import notify, Observer
 from src.particle import ParticleSprite
 
 log = logging.getLogger(__name__)
@@ -100,6 +101,7 @@ class PlayerSprite(pygame.sprite.Sprite):
         elif current_screen_position > HEIGHT_IN_TILES - 2:
             self.scene.shift_view(
                 (current_screen_position + 1) - (HEIGHT_IN_TILES - 1))
+
 
 
 class HorizontalMoveAction(AbstractAction):
@@ -300,100 +302,3 @@ class GrassEndJumpAction(GrassJumpAction):
                 next_position)
 
         return previous_position
-
-
-class PlayerController(object):
-    scene: 'GameScene'
-
-    def __init__(self, scene: 'GameScene'):
-        self.scene = scene
-
-    def handle_input(self, text_input: str):
-
-        for char in text_input:
-            try:
-                previous_position = self.scene.player.get_position()
-
-                def spawn_blink_particles(scene: 'GameScene'):
-                    scene.player_sprite.animator.start_animation(
-                        "blink-in", pygame.time.get_ticks())
-                    scene.spawn_particle(
-                        ParticleSprite.create_blink_in(scene, scene.player.position))
-                    scene.spawn_particle(
-                        ParticleSprite.create_blink_out(scene, previous_position)
-                    )
-
-                if char == "h":
-                    self.scene.player.apply_action(
-                        HorizontalMoveAction(self.scene.environment, -1))
-                    self.scene.player_sprite.animator.start_animation(
-                        "dash", pygame.time.get_ticks())
-                    self.scene.spawn_particle(
-                        ParticleSprite.create_dash_left(self.scene, previous_position))
-
-                if char == "j":
-                    self.scene.player.apply_action(
-                        VerticalMoveAction(self.scene.environment, 1))
-                    self.scene.player_sprite.animator.start_animation(
-                        "descent", pygame.time.get_ticks())
-                    self.scene.spawn_particle(
-                        ParticleSprite.create_descent(self.scene,
-                                                      self.scene.player.position,
-                                                      self.scene.player.direction))
-                if char == "k":
-                    self.scene.player.apply_action(
-                        VerticalMoveAction(self.scene.environment, -1))
-                    self.scene.player_sprite.animator.start_animation(
-                        "ascent", pygame.time.get_ticks())
-                    self.scene.spawn_particle(
-                        ParticleSprite.create_ascent(self.scene,
-                                                     self.scene.player.position,
-                                                     self.scene.player.direction))
-                if char == "l":
-                    self.scene.player.apply_action(
-                        HorizontalMoveAction(self.scene.environment, 1))
-                    self.scene.player_sprite.animator.start_animation(
-                        "dash", pygame.time.get_ticks())
-                    self.scene.spawn_particle(
-                        ParticleSprite.create_dash_right(self.scene, previous_position))
-
-                if char == "w":
-                    self.scene.player.apply_action(
-                        GrassStartJumpAction(self.scene.environment,
-                                             CardinalDirection.EAST))
-                    spawn_blink_particles(self.scene)
-                if char == "W":
-                    self.scene.player.apply_action(
-                        GrassStartJumpAction(self.scene.environment,
-                                             CardinalDirection.EAST,
-                                             ignore_stones=True))
-                    spawn_blink_particles(self.scene)
-
-                if char == "e":
-                    self.scene.player.apply_action(
-                        GrassEndJumpAction(self.scene.environment,
-                                           CardinalDirection.EAST))
-                    spawn_blink_particles(self.scene)
-
-                if char == "E":
-                    self.scene.player.apply_action(
-                        GrassEndJumpAction(self.scene.environment,
-                                           CardinalDirection.EAST,
-                                           ignore_stones=True))
-                    spawn_blink_particles(self.scene)
-
-                if char == "b":
-                    self.scene.player.apply_action(
-                        GrassEndJumpAction(self.scene.environment,
-                                           CardinalDirection.WEST))
-                    spawn_blink_particles(self.scene)
-
-                if char == "B":
-                    self.scene.player.apply_action(
-                        GrassEndJumpAction(self.scene.environment,
-                                           CardinalDirection.WEST,
-                                           ignore_stones=True))
-                    spawn_blink_particles(self.scene)
-
-            except ActionException as e:
-                log.debug("invalid action")

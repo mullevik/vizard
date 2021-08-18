@@ -1,7 +1,8 @@
 import logging
 import random
 
-from src.animation import LinearAlphaFadeAnimation, AnimationManager
+from src.animation import AnimationManager
+from src.control import PlayerController
 
 log = logging.getLogger(__name__)
 from abc import ABC, abstractmethod
@@ -16,7 +17,7 @@ from pygame.time import Clock
 from src.constants import TICK_SPEED
 from src.environment import Environment, EnvironmentRenderer
 from src.event import EventHandler, AppEventHandler, TextEventHandler
-from src.player import Player, PlayerSprite, PlayerController
+from src.player import Player, PlayerSprite
 from src.replay import Recording
 from src.settings import GameSettings
 from src.shard import ShardSprite, Shard

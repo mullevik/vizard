@@ -1,12 +1,53 @@
 import sys
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Dict, Any
 
 import pygame
 from pygame.event import Event
 
 if TYPE_CHECKING:
-    from src.scene import Scene, EmptyScene, GameScene
+    from src.scene import Scene, GameScene
+
+
+class EventName(str):
+    pass
+
+
+class Observer(ABC):
+
+    @abstractmethod
+    def subscribe(self) -> EventName:
+        """Subscribe self to some event name.
+        :returns the event name to which this observer just subscribed"""
+
+    @abstractmethod
+    def update(self, data: Any) -> None:
+        """This method is called when an event - to which this observer
+        is subscribed - happens."""
+
+
+subscribers: Dict[EventName, List[Observer]] = {}
+
+
+def subscribe(event_name: EventName, observer: Observer) -> EventName:
+    """Subscribe an observer to a specific event name.
+    :returns the event name to which the observer just subscribed"""
+    if event_name in subscribers:
+        subscribers[event_name].append(observer)
+    subscribers[event_name] = [observer]
+    return event_name
+
+
+def notify(event_name: EventName, *args, **kwargs) -> None:
+    """Notify all observers subscribed to an event with event name."""
+    if event_name in subscribers:
+        for observer in subscribers[event_name]:
+            observer.update(*args, **kwargs)
+
+
+def unsubscribe_all() -> None:
+    global subscribers
+    subscribers = {}
 
 
 class EventHandler(ABC):
