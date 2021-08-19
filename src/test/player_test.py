@@ -3,7 +3,8 @@ import unittest
 from src.action import ActionException
 from src.environment import Environment, EnvironmentException
 from src.player import Player, HorizontalMoveAction, VerticalMoveAction, \
-    GrassStartJumpAction, GrassEndJumpAction, ContourJumpAction
+    GrassStartJumpAction, GrassEndJumpAction, ContourJumpAction, \
+    VerticalJumpAction
 from src.settings import GameSettings
 from src.utils import Position, CardinalDirection
 
@@ -375,6 +376,71 @@ class ContourJumpTest(unittest.TestCase):
         self.assertEqual((3, 0), self.player.get_position())
         jump_left()
         self.assertEqual((3, 0), self.player.get_position())
+
+
+class VerticalJumpTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        #            0123456789"
+        dummy_map = "./........\n" \
+                    "..........\n" \
+                    ".../S.....\n" \
+                    "..../.....\n" \
+                    "...../....\n" \
+                    "..........\n" \
+                    "..o.......\n" \
+                    "...o......"
+        self.settings = GameSettings(scale_factor=1.)
+        self.environment = Environment(self.settings, dummy_map)
+        self.player = Player()
+        self.player.set_position(self.environment.get_starting_position())
+
+    def test_player_should_start_at_the_start_position(self):
+        self.assertEqual((4, 2), self.player.get_position())
+
+    def test_should_go_to_beginning_correctly(self):
+        self.player.apply_action(
+            VerticalJumpAction(self.environment, -1, CardinalDirection.NORTH))
+        self.assertEqual((1, 0), self.player.get_position())
+
+        self.player.apply_action(
+            VerticalJumpAction(self.environment, -1, CardinalDirection.NORTH))
+        self.assertEqual((1, 0), self.player.get_position())
+
+    def test_should_go_to_end_correctly(self):
+        self.player.apply_action(
+            VerticalJumpAction(self.environment, -1, CardinalDirection.SOUTH))
+        self.assertEqual((3, 7), self.player.get_position())
+
+        self.player.apply_action(
+            VerticalJumpAction(self.environment, -1, CardinalDirection.SOUTH))
+        self.assertEqual((3, 7), self.player.get_position())
+
+    def test_should_go_up_and_down_correctly(self):
+        self.player.apply_action(
+            VerticalJumpAction(self.environment, 2, CardinalDirection.NORTH)
+        )
+        self.assertEqual((1, 0), self.player.get_position())
+
+        self.player.apply_action(
+            VerticalJumpAction(self.environment, 2, CardinalDirection.SOUTH)
+        )
+        self.assertEqual((3, 2), self.player.get_position())
+
+        self.player.apply_action(
+            VerticalJumpAction(self.environment, 1, CardinalDirection.NORTH)
+        )
+        self.assertEqual((1, 0), self.player.get_position())
+
+        self.player.apply_action(
+            VerticalJumpAction(self.environment, 5, CardinalDirection.SOUTH)
+        )
+        self.assertEqual((2, 6), self.player.get_position())
+
+        self.player.apply_action(
+            VerticalJumpAction(self.environment, 50, CardinalDirection.SOUTH)
+        )
+        self.assertEqual((3, 7), self.player.get_position())
 
 
 if __name__ == '__main__':

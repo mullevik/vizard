@@ -1,23 +1,19 @@
+import logging
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Any, TYPE_CHECKING
-import logging
-
-from src.event import notify, Observer
-from src.particle import ParticleSprite
 
 log = logging.getLogger(__name__)
 
-import pygame
 from pygame.rect import Rect
 from pygame.sprite import AbstractGroup
 from pygame.surface import Surface
 
 from src.action import AbstractAction, ActionException
-from src.animation import FallbackAnimator, Animation
+from src.animation import FallbackAnimator
 from src.constants import *
 from src.environment import Environment
-from src.utils import Position, CardinalDirection, load_scaled_surfaces, Point
+from src.utils import Position, CardinalDirection
 
 if TYPE_CHECKING:
     from src.scene import GameScene
@@ -326,7 +322,7 @@ class ContourJumpAction(AbstractAction):
             if (not self.to_vegetation
                     and self.environment.tile_at(position).is_walkable()):
                 subject.set_position(position)
-                subject.set_direction(self._get_direction(
+                subject.set_direction(self.get_direction(
                     subject, previous_position.x, position.x))
                 return
 
@@ -334,7 +330,7 @@ class ContourJumpAction(AbstractAction):
                     and (self.environment.tile_at(position).is_grass()
                          or self.environment.tile_at(position).is_stone())):
                 subject.set_position(position)
-                subject.set_direction(self._get_direction(
+                subject.set_direction(self.get_direction(
                     subject, previous_position.x, position.x))
                 return
 
@@ -342,10 +338,74 @@ class ContourJumpAction(AbstractAction):
         raise ActionException("ContourJump not possible")
 
     @staticmethod
-    def _get_direction(player: Player,
-                       previous_x: int, next_x: int) -> CardinalDirection:
+    def get_direction(player: Player,
+                      previous_x: int, next_x: int) -> CardinalDirection:
         if previous_x < next_x:
             return CardinalDirection.EAST
         elif previous_x > next_x:
             return CardinalDirection.WEST
         return player.direction
+
+
+@dataclass
+class VerticalJumpAction(AbstractAction):
+
+    environment: Environment
+    steps: int
+    direction: CardinalDirection
+
+    def apply(self, subject: Player):
+        w, h = self.environment.get_tile_dimensions()
+        previous_position = subject.get_position()
+
+        if self.steps >= 0:
+            if self.direction == CardinalDirection.SOUTH:
+                start_y = previous_position.y + self.steps
+                if start_y > h - 1:
+                    # if the jump goes out of boundaries, do reverse search
+                    start_y = h - 1
+                    shift = -1
+                else:
+                    # otherwise do standard search in that direction
+                    shift = 1
+            else:
+                start_y = previous_position.y - self.steps
+                if start_y < 0:
+                    # if the jump goes out of boundaries, do reverse search
+                    start_y = 0
+                    shift = 1
+                else:
+                    # otherwise do standard search in that direction
+                    shift = -1
+        else:
+            # for negative step values do reverse search to get to top/bottom
+            if self.direction == CardinalDirection.SOUTH:
+                start_y = h - 1
+                shift = -1
+            else:
+                start_y = 0
+                shift = 1
+
+        position = Position(previous_position.x, start_y)
+
+        while self.environment.contains(position):
+
+            simulated_player = Player()
+            simulated_player.set_position(position)
+
+            try:
+                simulated_player.apply_action(
+                    ContourJumpAction(self.environment,
+                                      CardinalDirection.WEST,
+                                      to_vegetation=True)
+                )
+                subject.set_position(simulated_player.get_position())
+                subject.set_direction(simulated_player.direction)
+                return
+            except ActionException:
+                position = Position(position.x, position.y + shift)
+
+        raise ActionException("VerticalJump not possible")
+
+
+

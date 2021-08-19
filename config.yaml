@@ -19,11 +19,15 @@ controls:
   blink-to-the-start-of-contour: '0'
   blink-to-the-start-of-first-vegetation-chunk: '^'
 
-#  blink-to-the-top: 'gg'
-#  blink-up: '\x02'
-#  blink-up-half: '\x15'
-#  blink-down: '\x04'
-#  blink-down-half: '\x06'
-#  blink-to-the-bottom: G
+  blink-to-the-top: 'gg'
+  blink-up: 0x02
+  blink-up-half: 0x15
+  blink-down: 0x06
+  blink-down-half: 0x04
+  blink-to-the-bottom: G
+
+
+buffer_keys: 'g'
+
 
 

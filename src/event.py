@@ -42,10 +42,14 @@ def subscribe(event_name: EventName, observer: Observer) -> EventName:
 
 def notify(event_name: EventName, *args, **kwargs) -> None:
     """Notify all observers subscribed to an event with event name."""
-    log.debug(f"Notifying observers of event '{event_name}'")
+    n_observers = 0
     if event_name in subscribers:
         for observer in subscribers[event_name]:
+            n_observers += 1
             observer.update(*args, **kwargs)
+
+    log.debug(f"Notifying {n_observers} observers "
+              f"of event '{event_name}'")
 
 
 def unsubscribe_all() -> None:

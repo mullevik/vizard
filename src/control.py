@@ -1,5 +1,8 @@
 import typing
 import logging
+
+from src.constants import HEIGHT_IN_TILES
+
 log = logging.getLogger(__name__)
 
 import pygame
@@ -7,7 +10,8 @@ import pygame
 from src.action import ActionException
 from src.event import notify, Observer, EventName, subscribe
 from src.player import HorizontalMoveAction, VerticalMoveAction, \
-    GrassEndJumpAction, GrassStartJumpAction, ContourJumpAction
+    GrassEndJumpAction, GrassStartJumpAction, ContourJumpAction, \
+    VerticalJumpAction
 from src.particle import ParticleSprite
 from src.utils import CardinalDirection, Position
 
@@ -17,9 +21,11 @@ if typing.TYPE_CHECKING:
 
 class PlayerController(object):
     scene: 'GameScene'
+    buffer: str
 
     def __init__(self, scene: 'GameScene'):
         self.scene = scene
+        self.buffer = ""
 
         observers = [
             DashLeft(),
@@ -35,6 +41,12 @@ class PlayerController(object):
             BlinkToTheEndOfContour(),
             BlinkToTheStartOfContour(),
             BlinkToTheStartOfFirstVegetationChunk(),
+            BlinkToTheTop(),
+            BlinkUp(),
+            BlinkUpHalf(),
+            BlinkDown(),
+            BlinkDownHalf(),
+            BlinkToTheBottom(),
         ]
         for observer in observers:
             observer.subscribe()
@@ -43,11 +55,27 @@ class PlayerController(object):
 
         for char in text_input:
             log.debug(f"detected char: {char} ({bytes(char, 'ascii')})")
-            if char in self.scene.settings.key_event_map:
+            text = char
+
+            # check for buffer
+            if len(self.buffer) > 0:
+                # something is in the buffer - take it out and clear buffer
+                text = self.buffer + char
+                self.buffer = ""
+            else:
+                if char in self.scene.settings.buffer_keys:
+                    # add buffer key to an empty buffer
+                    self.buffer = self.buffer + char
+                    log.debug(f"buffer: {bytes(self.buffer, 'ascii')}")
+                    return
+
+            if text in self.scene.settings.key_event_map:
                 try:
-                    notify(self.scene.settings.key_event_map[char], self.scene)
+                    notify(self.scene.settings.key_event_map[text], self.scene)
                 except ActionException as e:
-                    log.debug("invalid action")
+                    log.debug(f"invalid action - {e}")
+            else:
+                log.warning(f"Unknown input text {bytes(text, 'ascii')}")
 
 
 def spawn_blink_particles(scene: 'GameScene', previous_position: Position):
@@ -242,5 +270,89 @@ class BlinkToTheStartOfFirstVegetationChunk(Observer):
             ContourJumpAction(scene.environment,
                               CardinalDirection.WEST,
                               to_vegetation=True)
+        )
+        spawn_blink_particles(scene, previous_position)
+
+
+class BlinkToTheTop(Observer):
+
+    def subscribe(self) -> EventName:
+        return subscribe("blink-to-the-top", self)
+
+    def update(self, scene: 'GameScene') -> None:
+        previous_position = scene.player.get_position()
+        scene.player.apply_action(
+           VerticalJumpAction(scene.environment, -1,
+                              CardinalDirection.NORTH)
+        )
+        spawn_blink_particles(scene, previous_position)
+
+
+class BlinkUp(Observer):
+
+    def subscribe(self) -> EventName:
+        return subscribe("blink-up", self)
+
+    def update(self, scene: 'GameScene') -> None:
+        previous_position = scene.player.get_position()
+        scene.player.apply_action(
+           VerticalJumpAction(scene.environment, HEIGHT_IN_TILES,
+                              CardinalDirection.NORTH)
+        )
+        spawn_blink_particles(scene, previous_position)
+
+
+class BlinkUpHalf(Observer):
+
+    def subscribe(self) -> EventName:
+        return subscribe("blink-up-half", self)
+
+    def update(self, scene: 'GameScene') -> None:
+        previous_position = scene.player.get_position()
+        scene.player.apply_action(
+           VerticalJumpAction(scene.environment, HEIGHT_IN_TILES // 2,
+                              CardinalDirection.NORTH)
+        )
+        spawn_blink_particles(scene, previous_position)
+
+
+class BlinkDown(Observer):
+
+    def subscribe(self) -> EventName:
+        return subscribe("blink-down", self)
+
+    def update(self, scene: 'GameScene') -> None:
+        previous_position = scene.player.get_position()
+        scene.player.apply_action(
+           VerticalJumpAction(scene.environment, HEIGHT_IN_TILES,
+                              CardinalDirection.SOUTH)
+        )
+        spawn_blink_particles(scene, previous_position)
+
+
+class BlinkDownHalf(Observer):
+
+    def subscribe(self) -> EventName:
+        return subscribe("blink-down-half", self)
+
+    def update(self, scene: 'GameScene') -> None:
+        previous_position = scene.player.get_position()
+        scene.player.apply_action(
+           VerticalJumpAction(scene.environment, HEIGHT_IN_TILES // 2,
+                              CardinalDirection.SOUTH)
+        )
+        spawn_blink_particles(scene, previous_position)
+
+
+class BlinkToTheBottom(Observer):
+
+    def subscribe(self) -> EventName:
+        return subscribe("blink-to-the-bottom", self)
+
+    def update(self, scene: 'GameScene') -> None:
+        previous_position = scene.player.get_position()
+        scene.player.apply_action(
+           VerticalJumpAction(scene.environment, -1,
+                              CardinalDirection.SOUTH)
         )
         spawn_blink_particles(scene, previous_position)
