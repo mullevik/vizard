@@ -21,12 +21,16 @@ class ParticleSprite(pygame.sprite.Sprite):
     image: Surface
     rect: Rect
 
+    flip_x: bool
+    flip_y: bool
+
     position: Position
     px_offset: Position
     animation: Animation
 
     def __init__(self, scene: 'GameScene', animation: Animation,
                  position: Position, px_offset: Position = Position(0, 0),
+                 flip_x: bool = False, flip_y: bool = False,
                  *groups: AbstractGroup):
         super().__init__(*groups)
 
@@ -34,18 +38,28 @@ class ParticleSprite(pygame.sprite.Sprite):
         self.animation = animation
         self.position = position
         self.px_offset = px_offset
+        self.flip_x = flip_x
+        self.flip_y = flip_y
 
         # automatically start the animation on creation
         self.animation.start(pygame.time.get_ticks())
 
-        self.image = self.animation.get_image(pygame.time.get_ticks())
+        self._update_image()
+
         self.rect = self.image.get_rect()
         self._update_rectangle_based_on_vertical_shift()
 
     def update(self, *args, **kwargs) -> None:
-        self.image = self.animation.get_image(pygame.time.get_ticks())
+        self._update_image()
         self._update_rectangle_based_on_vertical_shift()
         self._destroy()
+
+    def _update_image(self):
+        image = self.animation.get_image(pygame.time.get_ticks())
+        if not self.flip_x and not self.flip_y:
+            self.image = image
+        else:
+            self.image = pygame.transform.flip(image, self.flip_x, self.flip_y)
 
     def _update_rectangle_based_on_vertical_shift(self):
         scale_factor = self.scene.settings.scale_factor
@@ -119,17 +133,17 @@ class ParticleSprite(pygame.sprite.Sprite):
             px_offset=Position(0, -TILE_SIZE_PX // 4)
         )
 
-
     @staticmethod
     def create_blink_out(scene: 'GameScene',
-                         position: Position) -> 'ParticleSprite':
+                         position: Position,
+                         direction: CardinalDirection) -> 'ParticleSprite':
         return ParticleSprite(
             scene,
             scene.animation_manager.get_animation("particle-blink-out"),
             position,
-            px_offset=Position(0, 0)
+            px_offset=Position(0, 0),
+            flip_x=direction != CardinalDirection.EAST
         )
-
 
     @staticmethod
     def create_shard_collected(scene: 'GameScene',
@@ -139,4 +153,18 @@ class ParticleSprite(pygame.sprite.Sprite):
             scene.animation_manager.get_animation("particle-shard-collected"),
             position,
             px_offset=Position(0, -TILE_SIZE_PX)
+        )
+
+    @staticmethod
+    def create_shard_pointer(scene: 'GameScene',
+                             position: Position,
+                             direction: CardinalDirection = CardinalDirection.NORTH
+                             ) -> 'ParticleSprite':
+        flip_y = direction != CardinalDirection.NORTH
+
+        return ParticleSprite(
+            scene,
+            scene.animation_manager.get_animation("particle-shard-pointer"),
+            position,
+            flip_y=flip_y
         )

@@ -2,6 +2,8 @@ import logging
 import random
 from dataclasses import dataclass
 
+from pygame._sprite import Group
+
 from src.animation import AnimationManager
 from src.control import PlayerController
 from src.ui.game_hud import GameHudFactory
@@ -16,14 +18,14 @@ from pygame.event import Event
 from pygame.surface import Surface
 from pygame.time import Clock
 
-from src.constants import TICK_SPEED
+from src.constants import TICK_SPEED, HEIGHT_IN_TILES
 from src.environment import Environment, EnvironmentRenderer
 from src.event import EventHandler, AppEventHandler, TextEventHandler
 from src.player import Player, PlayerSprite
 from src.replay import Recording
 from src.settings import GameSettings
 from src.shard import ShardSprite, Shard
-from src.utils import Position, Milliseconds
+from src.utils import Position, Milliseconds, CardinalDirection
 from src.particle import ParticleSprite
 
 
@@ -145,7 +147,8 @@ class GameScene(Scene):
 
         self.hud_ui_group = GameHudFactory.build_group(self)
 
-        self.spawn_random_shard()
+        self.player_group.update()
+        self.spawn_pack_of_shards()
 
     def shift_view(self, amount: int) -> int:
         """Shift the view of the world by +amount
@@ -164,20 +167,72 @@ class GameScene(Scene):
         """Spawns a shard at a given position.
         :param position: where to spawn a shard
         """
-        self.shard_group.add(ShardSprite(self, Shard(position)))
+        shard = Shard(position)
+        self.shard_group.add(ShardSprite(self, shard))
         self.recording.record_shard_spawn(pygame.time.get_ticks(), position)
 
+        if shard.position.y > self.vertical_shift + HEIGHT_IN_TILES:
+            # shard is below the screen
+            particle = ParticleSprite.create_shard_pointer(
+                self,
+                Position(shard.position.x, self.vertical_shift + HEIGHT_IN_TILES - 2),
+                CardinalDirection.SOUTH
+            )
+            self.particle_group.add(particle)
+        elif shard.position.y < self.vertical_shift:
+            # shard is above the screen
+            particle = ParticleSprite.create_shard_pointer(
+                self,
+                Position(shard.position.x, self.vertical_shift + 1),
+                CardinalDirection.NORTH
+            )
+            self.particle_group.add(particle)
+
     def spawn_random_shard(self) -> None:
-        """Spawns a shard at a random walkable position."""
-        w, h = self.environment.get_tile_dimensions()
-        random_position = None
-        while not random_position or \
-                not self.environment.tile_at(random_position).is_walkable():
+        """Spawns a shard at a random walkable position.
+        At least 4 units far from the player.
+        And where there is no other shard."""
+
+        def get_random_position(environment: 'Environment') -> Position:
+            w, h = environment.get_tile_dimensions()
             x = random.randint(0, w - 1)
             y = random.randint(0, h - 2)
-            random_position = Position(x, y)
+            return Position(x, y)
 
+        def is_close_to_the_player(position: Position, player: Player) -> bool:
+            if abs(player.get_position().x - position.x) < 4:
+                return True
+            if abs(player.get_position().y - position.y) < 4:
+                return True
+            return False
+
+        def contains_shard(position: Position, shard_group: Group) -> bool:
+            for shard_sprite in shard_group.sprites():
+                shard_position = cast(ShardSprite, shard_sprite).shard.position
+                if position == shard_position:
+                    return True
+            return False
+
+        random_position = get_random_position(self.environment)
+        n_rolls = 1
+        while (not self.environment.tile_at(random_position).is_walkable()
+               or is_close_to_the_player(random_position, self.player)
+               or contains_shard(random_position, self.shard_group)):
+            random_position = get_random_position(self.environment)
+            n_rolls += 1
+
+            if n_rolls > 500:
+                log.error(f"Spawning random shard took too many ({n_rolls}) "
+                          f"tries, no shard was spawned")
+                return
+
+        log.debug(f"Shard spawn took {n_rolls} tries")
         self.spawn_shard(random_position)
+
+    def spawn_pack_of_shards(self):
+        """Spawns two random shards."""
+        self.spawn_random_shard()
+        self.spawn_random_shard()
 
     def handle_collisions(self):
         colliding_sprites = pygame.sprite.spritecollide(
@@ -192,16 +247,16 @@ class GameScene(Scene):
                 position = cast(ShardSprite, sprite).shard.position
                 self.spawn_particle(ParticleSprite.create_shard_collected(self, position))
 
-            # remove collected sprites
+            # remove collected shards
             number_of_shards = len(colliding_sprites)
             self.shard_group.remove(colliding_sprites)
 
             # add shards to score
             self.data.collected_shards += number_of_shards
 
-            # spawn new random shards
-            for i in range(number_of_shards):
-                self.spawn_random_shard()
+            # spawn new random shards if there are no shards
+            if len(self.shard_group.sprites()) == 0:
+                self.spawn_pack_of_shards()
 
     @staticmethod
     def is_player_colliding_with_shard(player: PlayerSprite,

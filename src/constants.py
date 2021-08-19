@@ -23,6 +23,7 @@ ANIM_SHARD_IDLE =       "../assets/graphics/effects/shard/animation/idle/"
 ANIM_PARTICLE_BLINK_IN = "../assets/graphics/particles/animation/blink-in/"
 ANIM_PARTICLE_BLINK_OUT = "../assets/graphics/particles/animation/blink-out/"
 ANIM_PARTICLE_SHARD_COLLECTED = "../assets/graphics/particles/animation/shard-collected/"
+ANIM_PARTICLE_SHARD_POINTER = "../assets/graphics/particles/animation/shard-pointer/"
 
 IMG_TILE_DIRT =         "../assets/graphics/environment/tile_dirt.png"
 IMG_TILE_DIRT_SIDES =   "../assets/graphics/environment/tile_dirt_sides.png"

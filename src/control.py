@@ -78,13 +78,15 @@ class PlayerController(object):
                 log.warning(f"Unknown input text {bytes(text, 'ascii')}")
 
 
-def spawn_blink_particles(scene: 'GameScene', previous_position: Position):
+def spawn_blink_particles(scene: 'GameScene', previous_position: Position,
+                          previous_direction: CardinalDirection):
     scene.player_sprite.animator.start_animation(
         "blink-in", pygame.time.get_ticks())
     scene.spawn_particle(
         ParticleSprite.create_blink_in(scene, scene.player.position))
     scene.spawn_particle(
-        ParticleSprite.create_blink_out(scene, previous_position)
+        ParticleSprite.create_blink_out(scene, previous_position,
+                                        previous_direction)
     )
 
 
@@ -157,10 +159,11 @@ class BlinkToTheEndOfNextVegetation(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
             GrassEndJumpAction(scene.environment,
                                CardinalDirection.EAST))
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkToTheEndOfNextVegetationChunk(Observer):
@@ -170,11 +173,12 @@ class BlinkToTheEndOfNextVegetationChunk(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
             GrassEndJumpAction(scene.environment,
                                CardinalDirection.EAST,
                                ignore_stones=True))
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkToTheStartOfNextVegetation(Observer):
@@ -184,10 +188,11 @@ class BlinkToTheStartOfNextVegetation(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
             GrassStartJumpAction(scene.environment,
                                  CardinalDirection.EAST))
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkToTheStartOfNextVegetationChunk(Observer):
@@ -197,11 +202,12 @@ class BlinkToTheStartOfNextVegetationChunk(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
             GrassStartJumpAction(scene.environment,
                                  CardinalDirection.EAST,
                                  ignore_stones=True))
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkToTheStartOfPreviousVegetation(Observer):
@@ -211,10 +217,11 @@ class BlinkToTheStartOfPreviousVegetation(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
             GrassEndJumpAction(scene.environment,
                                CardinalDirection.WEST))
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkToTheStartOfPreviousVegetationChunk(Observer):
@@ -224,11 +231,12 @@ class BlinkToTheStartOfPreviousVegetationChunk(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
             GrassEndJumpAction(scene.environment,
                                CardinalDirection.WEST,
                                ignore_stones=True))
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkToTheEndOfContour(Observer):
@@ -238,11 +246,12 @@ class BlinkToTheEndOfContour(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
             ContourJumpAction(scene.environment,
                               CardinalDirection.EAST)
         )
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkToTheStartOfContour(Observer):
@@ -252,11 +261,12 @@ class BlinkToTheStartOfContour(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
             ContourJumpAction(scene.environment,
                               CardinalDirection.WEST)
         )
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkToTheStartOfFirstVegetationChunk(Observer):
@@ -266,12 +276,13 @@ class BlinkToTheStartOfFirstVegetationChunk(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
             ContourJumpAction(scene.environment,
                               CardinalDirection.WEST,
                               to_vegetation=True)
         )
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkToTheTop(Observer):
@@ -281,11 +292,12 @@ class BlinkToTheTop(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
            VerticalJumpAction(scene.environment, -1,
                               CardinalDirection.NORTH)
         )
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkUp(Observer):
@@ -295,11 +307,12 @@ class BlinkUp(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
            VerticalJumpAction(scene.environment, HEIGHT_IN_TILES,
                               CardinalDirection.NORTH)
         )
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkUpHalf(Observer):
@@ -309,11 +322,12 @@ class BlinkUpHalf(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
            VerticalJumpAction(scene.environment, HEIGHT_IN_TILES // 2,
                               CardinalDirection.NORTH)
         )
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkDown(Observer):
@@ -323,11 +337,12 @@ class BlinkDown(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
            VerticalJumpAction(scene.environment, HEIGHT_IN_TILES,
                               CardinalDirection.SOUTH)
         )
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkDownHalf(Observer):
@@ -337,11 +352,12 @@ class BlinkDownHalf(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
            VerticalJumpAction(scene.environment, HEIGHT_IN_TILES // 2,
                               CardinalDirection.SOUTH)
         )
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)
 
 
 class BlinkToTheBottom(Observer):
@@ -351,8 +367,9 @@ class BlinkToTheBottom(Observer):
 
     def update(self, scene: 'GameScene') -> None:
         previous_position = scene.player.get_position()
+        previous_direction = scene.player.direction
         scene.player.apply_action(
            VerticalJumpAction(scene.environment, -1,
                               CardinalDirection.SOUTH)
         )
-        spawn_blink_particles(scene, previous_position)
+        spawn_blink_particles(scene, previous_position, previous_direction)

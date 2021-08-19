@@ -232,7 +232,12 @@ class AnimationManager(object):
                 load_scaled_surfaces(ANIM_PARTICLE_SHARD_COLLECTED,
                                      scale_factor),
                 70
-            )
+            ),
+            "particle-shard-pointer": LinearAlphaFadeAnimation(
+                load_scaled_surfaces(ANIM_PARTICLE_SHARD_POINTER,
+                                     scale_factor) * 10,
+                100
+            ),
         }
 
     def get_animation(self, name: str) -> Animation:
