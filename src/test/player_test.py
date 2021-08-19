@@ -3,7 +3,7 @@ import unittest
 from src.action import ActionException
 from src.environment import Environment, EnvironmentException
 from src.player import Player, HorizontalMoveAction, VerticalMoveAction, \
-    GrassStartJumpAction, GrassEndJumpAction
+    GrassStartJumpAction, GrassEndJumpAction, ContourJumpAction
 from src.settings import GameSettings
 from src.utils import Position, CardinalDirection
 
@@ -315,6 +315,66 @@ class GrassJumpsTest(unittest.TestCase):
         jump_left()
         self.assertEqual((0, 0), self.player.get_position())
         self.assertRaises(ActionException, jump_left)
+
+
+class ContourJumpTest(unittest.TestCase):
+
+    def setUp(self) -> None:
+        #            0         10        20 "
+        #            0123456789|123456789|12"
+        dummy_map = "  .o/o///.Soo//o///.. \n" \
+                    " ..//..               "
+        self.settings = GameSettings(scale_factor=1.)
+        self.environment = Environment(self.settings, dummy_map)
+        self.player = Player()
+        self.player.set_position(self.environment.get_starting_position())
+
+    def test_player_should_start_at_the_start_position(self):
+        self.assertEqual((10, 0), self.player.get_position())
+
+    def test_player_should_normal_contour_jump_correctly(self):
+        this = self
+
+        def jump_right():
+            this.player.apply_action(
+                ContourJumpAction(this.environment, CardinalDirection.EAST))
+
+        def jump_left():
+            this.player.apply_action(
+                ContourJumpAction(this.environment, CardinalDirection.WEST))
+
+        jump_right()
+        self.assertEqual((20, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((20, 0), self.player.get_position())
+
+        jump_left()
+        self.assertEqual((2, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((2, 0), self.player.get_position())
+
+    def test_player_should_vegetation_contour_jump_correctly(self):
+        this = self
+
+        def jump_right():
+            this.player.apply_action(
+                ContourJumpAction(this.environment, CardinalDirection.EAST,
+                                  to_vegetation=True))
+
+        def jump_left():
+            this.player.apply_action(
+                ContourJumpAction(this.environment, CardinalDirection.WEST,
+                                  to_vegetation=True))
+
+        jump_right()
+        self.assertEqual((18, 0), self.player.get_position())
+        jump_right()
+        self.assertEqual((18, 0), self.player.get_position())
+
+        jump_left()
+        self.assertEqual((3, 0), self.player.get_position())
+        jump_left()
+        self.assertEqual((3, 0), self.player.get_position())
 
 
 if __name__ == '__main__':

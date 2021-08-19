@@ -193,9 +193,6 @@ class EnvironmentRenderer(AbstractRenderer):
 
         if tile.is_dirt():
             surfaces.append(self._prepare_dirt_surface(position, dirt_map))
-
-            # load_scaled_surface(IMG_TILE_DIRT, scale_factor,
-            #                     has_alpha=False))
         if tile.is_grass():
             surfaces.append(
                 load_scaled_surface(random.choice(IMG_TILE_GRASS_LIST),

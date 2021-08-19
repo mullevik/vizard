@@ -15,10 +15,10 @@ controls:
   blink-to-the-start-of-previous-vegetation: b
   blink-to-the-start-of-previous-vegetation-chunk: B
 
-#  blink-to-the-end-of-contour: '$'
-#  blink-to-the-start-of-contour: '0'
-#  blink-to-the-start-of-first-vegetation-chunk: '^'
-#
+  blink-to-the-end-of-contour: '$'
+  blink-to-the-start-of-contour: '0'
+  blink-to-the-start-of-first-vegetation-chunk: '^'
+
 #  blink-to-the-top: 'gg'
 #  blink-up: '\x02'
 #  blink-up-half: '\x15'

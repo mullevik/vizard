@@ -7,7 +7,7 @@ import pygame
 from src.action import ActionException
 from src.event import notify, Observer, EventName, subscribe
 from src.player import HorizontalMoveAction, VerticalMoveAction, \
-    GrassEndJumpAction, GrassStartJumpAction
+    GrassEndJumpAction, GrassStartJumpAction, ContourJumpAction
 from src.particle import ParticleSprite
 from src.utils import CardinalDirection, Position
 
@@ -32,6 +32,9 @@ class PlayerController(object):
             BlinkToTheStartOfNextVegetationChunk(),
             BlinkToTheStartOfPreviousVegetation(),
             BlinkToTheStartOfPreviousVegetationChunk(),
+            BlinkToTheEndOfContour(),
+            BlinkToTheStartOfContour(),
+            BlinkToTheStartOfFirstVegetationChunk(),
         ]
         for observer in observers:
             observer.subscribe()
@@ -39,6 +42,7 @@ class PlayerController(object):
     def handle_input(self, text_input: str):
 
         for char in text_input:
+            log.debug(f"detected char: {char} ({bytes(char, 'ascii')})")
             if char in self.scene.settings.key_event_map:
                 try:
                     notify(self.scene.settings.key_event_map[char], self.scene)
@@ -196,4 +200,47 @@ class BlinkToTheStartOfPreviousVegetationChunk(Observer):
             GrassEndJumpAction(scene.environment,
                                CardinalDirection.WEST,
                                ignore_stones=True))
+        spawn_blink_particles(scene, previous_position)
+
+
+class BlinkToTheEndOfContour(Observer):
+
+    def subscribe(self) -> EventName:
+        return subscribe("blink-to-the-end-of-contour", self)
+
+    def update(self, scene: 'GameScene') -> None:
+        previous_position = scene.player.get_position()
+        scene.player.apply_action(
+            ContourJumpAction(scene.environment,
+                              CardinalDirection.EAST)
+        )
+        spawn_blink_particles(scene, previous_position)
+
+
+class BlinkToTheStartOfContour(Observer):
+
+    def subscribe(self) -> EventName:
+        return subscribe("blink-to-the-start-of-contour", self)
+
+    def update(self, scene: 'GameScene') -> None:
+        previous_position = scene.player.get_position()
+        scene.player.apply_action(
+            ContourJumpAction(scene.environment,
+                              CardinalDirection.WEST)
+        )
+        spawn_blink_particles(scene, previous_position)
+
+
+class BlinkToTheStartOfFirstVegetationChunk(Observer):
+
+    def subscribe(self) -> EventName:
+        return subscribe("blink-to-the-start-of-first-vegetation-chunk", self)
+
+    def update(self, scene: 'GameScene') -> None:
+        previous_position = scene.player.get_position()
+        scene.player.apply_action(
+            ContourJumpAction(scene.environment,
+                              CardinalDirection.WEST,
+                              to_vegetation=True)
+        )
         spawn_blink_particles(scene, previous_position)

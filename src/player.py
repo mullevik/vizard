@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import Any, TYPE_CHECKING
 import logging
 
@@ -101,7 +102,6 @@ class PlayerSprite(pygame.sprite.Sprite):
         elif current_screen_position > HEIGHT_IN_TILES - 3:
             self.scene.shift_view(
                 (current_screen_position + 2) - (HEIGHT_IN_TILES - 1))
-
 
 
 class HorizontalMoveAction(AbstractAction):
@@ -302,3 +302,50 @@ class GrassEndJumpAction(GrassJumpAction):
                 next_position)
 
         return previous_position
+
+
+@dataclass
+class ContourJumpAction(AbstractAction):
+    environment: Environment
+    direction: CardinalDirection
+    to_vegetation: bool = False
+
+    def apply(self, subject: Player):
+        previous_position = subject.get_position()
+
+        w, h = self.environment.get_tile_dimensions()
+
+        start_x = w - 1 if self.direction == CardinalDirection.EAST else 0
+        shift = -1 if self.direction == CardinalDirection.EAST else 1
+
+        y = subject.get_position().y
+
+        position = Position(start_x, y)
+        while self.environment.contains(position):
+
+            if (not self.to_vegetation
+                    and self.environment.tile_at(position).is_walkable()):
+                subject.set_position(position)
+                subject.set_direction(self._get_direction(
+                    subject, previous_position.x, position.x))
+                return
+
+            if (self.to_vegetation
+                    and (self.environment.tile_at(position).is_grass()
+                         or self.environment.tile_at(position).is_stone())):
+                subject.set_position(position)
+                subject.set_direction(self._get_direction(
+                    subject, previous_position.x, position.x))
+                return
+
+            position = Position(position.x + shift, position.y)
+        raise ActionException("ContourJump not possible")
+
+    @staticmethod
+    def _get_direction(player: Player,
+                       previous_x: int, next_x: int) -> CardinalDirection:
+        if previous_x < next_x:
+            return CardinalDirection.EAST
+        elif previous_x > next_x:
+            return CardinalDirection.WEST
+        return player.direction

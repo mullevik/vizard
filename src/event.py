@@ -1,6 +1,8 @@
 import sys
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, List, Dict, Any
+import logging
+log = logging.getLogger(__name__)
 
 import pygame
 from pygame.event import Event
@@ -40,6 +42,7 @@ def subscribe(event_name: EventName, observer: Observer) -> EventName:
 
 def notify(event_name: EventName, *args, **kwargs) -> None:
     """Notify all observers subscribed to an event with event name."""
+    log.debug(f"Notifying observers of event '{event_name}'")
     if event_name in subscribers:
         for observer in subscribers[event_name]:
             observer.update(*args, **kwargs)
